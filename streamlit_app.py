@@ -122,11 +122,8 @@ if not seat:
     st.subheader(tr(lang, "new_game"))
 
     with st.form("create_game", border=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            white_name = st.text_input(tr(lang, "white_name"), value="")
-        with c2:
-            black_name = st.text_input(tr(lang, "black_name"), value="")
+        white_name = st.text_input(tr(lang, "white_name"), value="")
+        st.caption(tr(lang, "friend_name_later"))
         time_control = st.selectbox(
             tr(lang, "time_control"),
             options=["rapid_15_10", "blitz_5_3", "relaxed"],
@@ -141,7 +138,7 @@ if not seat:
     if submitted:
         gid = db.create_game(
             white_name=white_name or "White",
-            black_name=black_name or "Friend",
+            black_name="Friend",
             time_control=time_control,
         )
         st.query_params["seat"] = make_seat_token(gid, "white", APP_SECRET)
@@ -158,9 +155,8 @@ if not game:
     st.error(tr(lang, "game_missing"))
     st.stop()
 
-# Black opening the permanent link is enough to join the room.
-if seat.role == "black" and game["status"] == "waiting":
-    game = db.mark_black_joined(seat.game_id) or game
+# Black must explicitly enter their own name before joining.
+# Opening the permanent Black link alone does not mark the game as joined.
 
 # Poll the server so each player sees the other player arrive/move.
 st_autorefresh(interval=3000, limit=None, key=f"game_refresh_{seat.game_id}")
@@ -203,8 +199,27 @@ if game["status"] == "waiting":
     if seat.role == "white":
         st.warning(tr(lang, "waiting"))
         st.markdown("Send the **Black permanent link** above to your friend.")
-    else:
-        st.info(tr(lang, "black_wait"))
+        st.caption(tr(lang, "friend_name_later"))
+        st.stop()
+
+    st.info(tr(lang, "black_invitation"))
+    st.markdown(f"### {game['white_name']} vs …")
+    st.caption(tr(lang, "black_name_help"))
+
+    with st.form("join_black", border=True):
+        black_name = st.text_input(tr(lang, "your_name_black"), value="")
+        joined = st.form_submit_button(
+            tr(lang, "join_game"),
+            type="primary",
+            use_container_width=True,
+        )
+
+    if joined:
+        try:
+            db.join_black(seat.game_id, black_name)
+            st.rerun()
+        except ValueError as exc:
+            st.error(str(exc))
     st.stop()
 
 if game["status"] == "ready":
@@ -259,5 +274,5 @@ with right:
 
 st.divider()
 st.caption(
-    "Stadia Chess GUI v0.1 — server-side White/Black identity via permanent signed links."
+    "Stadia Chess GUI v0.2 — White creates; Black enters their own name; permanent signed player links."
 )

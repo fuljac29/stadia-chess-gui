@@ -135,6 +135,48 @@ def mark_black_joined(game_id: str, db_path: Path | str = DEFAULT_DB_PATH) -> di
     return get_game(game_id, db_path)
 
 
+
+def join_black(
+    game_id: str,
+    black_name: str,
+    db_path: Path | str = DEFAULT_DB_PATH,
+) -> dict[str, Any]:
+    """Black chooses their own name and explicitly joins the waiting game."""
+    name = (black_name or "").strip()[:60]
+    if not name:
+        raise ValueError("Please enter your name")
+
+    now = utc_now()
+    with connection(db_path) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM games WHERE id = ?", (game_id,)).fetchone()
+        if not row:
+            conn.execute("ROLLBACK")
+            raise ValueError("Game not found")
+
+        if row["status"] in {"ready", "active", "finished"}:
+            conn.execute("COMMIT")
+            return dict(row)
+
+        if row["status"] != "waiting":
+            conn.execute("ROLLBACK")
+            raise ValueError("This game cannot be joined")
+
+        conn.execute(
+            """
+            UPDATE games
+            SET black_name = ?,
+                black_joined_at = COALESCE(black_joined_at, ?),
+                status = 'ready',
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (name, now, now, game_id),
+        )
+        conn.execute("COMMIT")
+    return get_game(game_id, db_path)  # type: ignore[return-value]
+
+
 def start_game(game_id: str, db_path: Path | str = DEFAULT_DB_PATH) -> dict[str, Any]:
     now = utc_now()
     with connection(db_path) as conn:

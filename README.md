@@ -1,8 +1,8 @@
-# Stadia Chess GUI v0.1
+# Stadia Chess GUI v0.2
 
 A clean Streamlit prototype for Stadia Private Chess.
 
-## Goal of v0.1
+## Goal of v0.2
 
 Prove one flow reliably:
 
@@ -74,3 +74,7 @@ Not connected in v0.1.
 
 WooCommerce will be integrated only after the core flow (create -> invite -> play -> close -> return) is stable.
 The future integration should grant the right to create games; WooCommerce should not control White/Black identity.
+
+## v0.2 flow change
+
+The host enters only their own name. The invited Black player enters their own name after opening the permanent Black invitation link and presses JOIN GAME. Only then does the game become ready for White to start.
