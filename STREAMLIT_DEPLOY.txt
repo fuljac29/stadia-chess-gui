@@ -1,0 +1,23 @@
+STADIA CHESS GUI v0.1 — STREAMLIT DEPLOY
+
+After the GitHub repository is ready:
+
+1. Open Streamlit Community Cloud.
+2. Create app.
+3. Select your GitHub repository.
+4. Branch: main
+5. Main file path: streamlit_app.py
+6. Choose an app URL/subdomain if desired.
+7. Open Advanced settings / Secrets.
+8. Add:
+
+APP_SECRET = "CHANGE TO A LONG RANDOM SECRET"
+APP_BASE_URL = "https://YOUR-APP.streamlit.app"
+ADMIN_PASSWORD = "CHANGE TO A STRONG PASSWORD"
+
+9. Deploy.
+
+IMPORTANT:
+- Keep APP_SECRET unchanged once player links are in use.
+- v0.1 SQLite is for flow testing.
+- Before public release, replace SQLite with durable PostgreSQL/Supabase.

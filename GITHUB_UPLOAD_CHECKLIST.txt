@@ -1,0 +1,27 @@
+STADIA CHESS GUI v0.1 — GITHUB CHECKLIST
+
+1. Create a new GitHub repository, e.g.:
+   stadia-chess-gui
+
+2. Unzip this package on your PC.
+
+3. Upload the CONTENTS of the folder, not the outer ZIP file.
+
+4. Confirm GitHub root contains:
+   streamlit_app.py
+   chess_db.py
+   chess_tokens.py
+   chess_board.py
+   i18n.py
+   requirements.txt
+   README.md
+   pages/
+   .streamlit/
+
+5. DO NOT upload a real .streamlit/secrets.toml.
+   Only secrets.toml.example belongs in GitHub.
+
+6. Commit to branch:
+   main
+
+After this, deploy from Streamlit Community Cloud.

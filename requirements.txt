@@ -1,0 +1,3 @@
+streamlit>=1.49,<2
+python-chess>=1.999
+streamlit-autorefresh>=1.0.1
