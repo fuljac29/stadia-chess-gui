@@ -36,7 +36,7 @@ APP_SECRET = secret("APP_SECRET", "DEV-ONLY-CHANGE-ME")
 # Permanent White/Black links must always stay inside Stadia.
 # This is intentionally fixed in code so Streamlit Secrets cannot
 # accidentally redirect players back to streamlit.app.
-STADIA_PUBLIC_URL = "https://stadiaorg.com/premium-arena-access/".rstrip("/")
+STADIA_PUBLIC_URL = "https://stadiaorg.com/stadia-premium-arena/".rstrip("/")
 
 
 def seat_link(game_id: str, role: str, lang: str) -> str:
