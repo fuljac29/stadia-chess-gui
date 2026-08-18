@@ -1,180 +1,93 @@
 from __future__ import annotations
 
-import chess
+LANGUAGES = {
+    "EN": "🇺🇸 English",
+    "IT": "🇮🇹 Italiano",
+    "DE": "🇩🇪 Deutsch",
+    "FR": "🇫🇷 Français",
+    "ES": "🇪🇸 Español",
+}
 
-
-PIECE_MAP = {
-    "P": "♙",
-    "N": "♘",
-    "B": "♗",
-    "R": "♖",
-    "Q": "♕",
-    "K": "♔",
-    "p": "♟",
-    "n": "♞",
-    "b": "♝",
-    "r": "♜",
-    "q": "♛",
-    "k": "♚",
+TEXT = {
+    "EN": {
+        "title": "Stadia Private Chess",
+        "tagline": "Invite. Play. Return.",
+        "subtitle": "Create one private game, invite a friend, and return later to the same position.",
+        "invalid_link": "This player link is invalid or incomplete.",
+        "game_missing": "This game no longer exists.",
+        "white": "White",
+        "black": "Black",
+        "turn": "Turn",
+        "finished": "Game finished",
+        "result": "Result",
+        "select_move": "Choose your move",
+        "make_move": "MAKE MOVE",
+    },
+    "IT": {
+        "title": "Scacchi Privati Stadia",
+        "tagline": "Invita. Gioca. Ritorna.",
+        "subtitle": "Crea una partita privata, invita un amico e torna più tardi alla stessa posizione.",
+        "invalid_link": "Questo link giocatore non è valido o è incompleto.",
+        "game_missing": "Questa partita non esiste più.",
+        "white": "Bianco",
+        "black": "Nero",
+        "turn": "Turno",
+        "finished": "Partita terminata",
+        "result": "Risultato",
+        "select_move": "Scegli la tua mossa",
+        "make_move": "FAI LA MOSSA",
+    },
+    "DE": {
+        "title": "Stadia Privatschach",
+        "tagline": "Einladen. Spielen. Zurückkehren.",
+        "subtitle": "Erstelle eine private Partie, lade einen Freund ein und kehre später zur gleichen Stellung zurück.",
+        "invalid_link": "Dieser Spieler-Link ist ungültig oder unvollständig.",
+        "game_missing": "Diese Partie existiert nicht mehr.",
+        "white": "Weiß",
+        "black": "Schwarz",
+        "turn": "Am Zug",
+        "finished": "Partie beendet",
+        "result": "Ergebnis",
+        "select_move": "Wähle deinen Zug",
+        "make_move": "ZUG AUSFÜHREN",
+    },
+    "FR": {
+        "title": "Stadia Échecs Privés",
+        "tagline": "Invitez. Jouez. Revenez.",
+        "subtitle": "Créez une partie privée, invitez un ami et revenez plus tard à la même position.",
+        "invalid_link": "Ce lien joueur est invalide ou incomplet.",
+        "game_missing": "Cette partie n’existe plus.",
+        "white": "Blancs",
+        "black": "Noirs",
+        "turn": "Trait",
+        "finished": "Partie terminée",
+        "result": "Résultat",
+        "select_move": "Choisissez votre coup",
+        "make_move": "JOUER LE COUP",
+    },
+    "ES": {
+        "title": "Ajedrez Privado Stadia",
+        "tagline": "Invita. Juega. Regresa.",
+        "subtitle": "Crea una partida privada, invita a un amigo y vuelve más tarde a la misma posición.",
+        "invalid_link": "Este enlace de jugador no es válido o está incompleto.",
+        "game_missing": "Esta partida ya no existe.",
+        "white": "Blancas",
+        "black": "Negras",
+        "turn": "Turno",
+        "finished": "Partida terminada",
+        "result": "Resultado",
+        "select_move": "Elige tu jugada",
+        "make_move": "HACER JUGADA",
+    },
 }
 
 
-def move_options(fen: str) -> list[tuple[str, str]]:
-    board = chess.Board(fen)
-    options = []
+def tr(lang: str, key: str) -> str:
+    language = (lang or "EN").upper()
+    if language not in TEXT:
+        language = "EN"
 
-    for move in board.legal_moves:
-        san = board.san(move)
-        options.append((san, move.uci()))
+    if key in TEXT[language]:
+        return TEXT[language][key]
 
-    return options
-
-
-def board_html(fen: str, orientation: str = "white") -> str:
-    board = chess.Board(fen)
-
-    files = list("abcdefgh")
-    ranks = list(range(8, 0, -1))
-
-    if orientation == "black":
-        files = list(reversed(files))
-        ranks = list(reversed(ranks))
-
-    cells = []
-
-    for rank in ranks:
-        for file_ in files:
-            square_name = f"{file_}{rank}"
-            square = chess.parse_square(square_name)
-            piece = board.piece_at(square)
-
-            file_index = chess.square_file(square)
-            rank_index = chess.square_rank(square)
-
-            is_light = (file_index + rank_index) % 2 == 0
-            square_class = "light" if is_light else "dark"
-
-            piece_html = PIECE_MAP.get(piece.symbol(), "&nbsp;") if piece else "&nbsp;"
-
-            # coordinate labels
-            coord_bottom = ""
-            coord_top = ""
-            coord_left = ""
-            coord_right = ""
-
-            # show file letters on bottom edge
-            if orientation == "white":
-                if rank == 1:
-                    coord_bottom = f'<span class="cb-file">{file_}</span>'
-                if file_ == "a":
-                    coord_left = f'<span class="cb-rank">{rank}</span>'
-            else:
-                if rank == 8:
-                    coord_top = f'<span class="cb-file">{file_}</span>'
-                if file_ == "h":
-                    coord_right = f'<span class="cb-rank">{rank}</span>'
-
-            cells.append(
-                f"""
-                <div class="cb-square {square_class}">
-                    {coord_bottom}
-                    {coord_top}
-                    {coord_left}
-                    {coord_right}
-                    <span class="cb-piece">{piece_html}</span>
-                </div>
-                """
-            )
-
-    return f"""
-    <style>
-    .cb-wrap {{
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }}
-
-    .cb-board {{
-        width: min(92vw, 640px);
-        aspect-ratio: 1 / 1;
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        border: 2px solid #1f2a44;
-        border-radius: 14px;
-        overflow: hidden;
-        box-sizing: border-box;
-        background: #1f2a44;
-    }}
-
-    .cb-square {{
-        position: relative;
-        width: 100%;
-        aspect-ratio: 1 / 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-    }}
-
-    .cb-square.light {{
-        background: #e7d2a4;
-    }}
-
-    .cb-square.dark {{
-        background: #a9744a;
-    }}
-
-    .cb-piece {{
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        font-size: clamp(28px, 4.2vw, 48px);
-        line-height: 1;
-        user-select: none;
-    }}
-
-    .cb-file {{
-        position: absolute;
-        right: 6px;
-        bottom: 4px;
-        font-size: 11px;
-        font-weight: 700;
-        color: rgba(0,0,0,0.65);
-        line-height: 1;
-    }}
-
-    .cb-rank {{
-        position: absolute;
-        left: 6px;
-        top: 4px;
-        font-size: 11px;
-        font-weight: 700;
-        color: rgba(0,0,0,0.65);
-        line-height: 1;
-    }}
-
-    .cb-square.dark .cb-file,
-    .cb-square.dark .cb-rank {{
-        color: rgba(255,255,255,0.75);
-    }}
-
-    @media (max-width: 700px) {{
-        .cb-board {{
-            width: min(96vw, 520px);
-        }}
-
-        .cb-piece {{
-            font-size: clamp(24px, 6vw, 40px);
-        }}
-    }}
-    </style>
-
-    <div class="cb-wrap">
-        <div class="cb-board">
-            {''.join(cells)}
-        </div>
-    </div>
-    """
+    return TEXT["EN"].get(key, key)
