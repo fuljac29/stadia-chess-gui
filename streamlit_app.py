@@ -26,6 +26,11 @@ db.init_db()
 
 STADIA_PUBLIC_URL = "https://stadiaorg.com/stadia-premium-arena/".rstrip("/")
 
+# Fixed board viewport prevents the component iframe from changing height
+# during a move, which keeps the page anchored in place.
+BOARD_DISPLAY_PX = 460
+BOARD_SHELL_PX = 620
+
 
 def secret(name: str, default: str) -> str:
     try:
@@ -611,7 +616,8 @@ def board_fragment() -> None:
         streamlit_image_coordinates(
             board_image,
             key=board_component_key,
-            width="stretch",
+            width=BOARD_DISPLAY_PX,
+            height=BOARD_DISPLAY_PX,
             cursor=(
                 "pointer"
                 if can_move
@@ -681,7 +687,14 @@ def board_fragment() -> None:
 
 # On your turn there is no timer and no continuous refresh.
 # The board reruns only when you actually click it.
-board_fragment()
+#
+# The outer shell has a fixed height. Even while the fragment refreshes,
+# the page layout therefore keeps the same geometry and does not jump.
+with st.container(
+    height=BOARD_SHELL_PX,
+    border=False,
+):
+    board_fragment()
 
 
 # Only the waiting player polls the database.
@@ -735,7 +748,7 @@ if game_after_board:
 st.divider()
 
 st.caption(
-    "Stadia Chess GUI v0.8.5 — large fitted pieces; "
-    "stable callback-driven board; White/Black orientations; "
-    "two-click moves."
+    "Stadia Chess GUI v0.8.6 — embedded standard pieces; "
+    "fixed board viewport; stable two-click moves; "
+    "White/Black orientations."
 )
