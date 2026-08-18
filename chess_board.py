@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from functools import lru_cache
+from glob import glob
 from pathlib import Path
 
 import chess
@@ -18,19 +20,127 @@ PIECES = {
 }
 
 
+@lru_cache(maxsize=64)
 def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """
+    Return a scalable font that contains chess symbols.
+
+    Streamlit Cloud does not guarantee the same system fonts on every
+    deployment. We therefore search several common locations and finally use
+    Pillow's own scalable default font instead of falling back to the tiny
+    bitmap font that caused the microscopic pieces in v0.8.4.
+    """
     candidates = [
         "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        "/usr/local/share/fonts/DejaVuSans.ttf",
     ]
+
+    candidates.extend(
+        glob(
+            "/usr/local/lib/python*/site-packages/"
+            "matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf"
+        )
+    )
+    candidates.extend(
+        glob(
+            "/home/appuser/venv/lib/python*/site-packages/"
+            "matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf"
+        )
+    )
+
     for candidate in candidates:
-        if Path(candidate).exists():
-            return ImageFont.truetype(candidate, size=size)
+        try:
+            if Path(candidate).exists():
+                return ImageFont.truetype(
+                    candidate,
+                    size=size,
+                )
+        except OSError:
+            pass
 
     try:
-        return ImageFont.truetype("DejaVuSans.ttf", size=size)
+        return ImageFont.truetype(
+            "DejaVuSans.ttf",
+            size=size,
+        )
     except OSError:
+        pass
+
+    # Pillow 10.1+ provides a scalable bundled default font.
+    # This is the important fallback on Streamlit Cloud.
+    try:
+        return ImageFont.load_default(
+            size=size
+        )
+    except TypeError:
         return ImageFont.load_default()
+
+
+@lru_cache(maxsize=64)
+def _piece_font(
+    symbol: str,
+    square_size: int,
+) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """
+    Fit each chess glyph to about 80% of a square, independent of the font's
+    internal metrics. This keeps the pieces large and consistent.
+    """
+    target = max(
+        30,
+        int(square_size * 0.80),
+    )
+
+    probe_size = max(
+        48,
+        int(square_size * 1.45),
+    )
+    probe_font = _font(
+        probe_size
+    )
+
+    probe_image = Image.new(
+        "L",
+        (
+            square_size * 2,
+            square_size * 2,
+        ),
+        0,
+    )
+    probe_draw = ImageDraw.Draw(
+        probe_image
+    )
+
+    bbox = probe_draw.textbbox(
+        (0, 0),
+        symbol,
+        font=probe_font,
+        stroke_width=1,
+    )
+
+    width = max(
+        1,
+        bbox[2] - bbox[0],
+    )
+    height = max(
+        1,
+        bbox[3] - bbox[1],
+    )
+
+    scale = min(
+        target / width,
+        target / height,
+    )
+
+    fitted_size = max(
+        30,
+        int(probe_size * scale),
+    )
+
+    return _font(
+        fitted_size
+    )
 
 
 def legal_sources(fen: str) -> set[str]:
@@ -179,12 +289,6 @@ def render_board_image(
     draw = ImageDraw.Draw(image)
 
     square_px = size / 8
-    piece_font = _font(
-        max(
-            24,
-            int(square_px * 0.72),
-        )
-    )
     coord_font = _font(
         max(
             10,
@@ -294,6 +398,11 @@ def render_board_image(
                     piece.symbol()
                 ]
 
+                piece_font = _piece_font(
+                    symbol,
+                    int(square_px),
+                )
+
                 bbox = draw.textbbox(
                     (0, 0),
                     symbol,
@@ -321,14 +430,14 @@ def render_board_image(
                     stroke_fill = "#111827"
                     stroke_width = max(
                         1,
-                        int(square_px * 0.022),
+                        int(square_px * 0.028),
                     )
                 else:
                     fill = "#111827"
                     stroke_fill = "#F8FAFC"
                     stroke_width = max(
                         1,
-                        int(square_px * 0.012),
+                        int(square_px * 0.018),
                     )
 
                 draw.text(
