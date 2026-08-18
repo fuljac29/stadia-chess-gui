@@ -32,12 +32,16 @@ def secret(name: str, default: str) -> str:
 
 
 APP_SECRET = secret("APP_SECRET", "DEV-ONLY-CHANGE-ME")
-APP_BASE_URL = secret("APP_BASE_URL", "http://localhost:8501").rstrip("/")
+
+# Permanent White/Black links must always stay inside Stadia.
+# This is intentionally fixed in code so Streamlit Secrets cannot
+# accidentally redirect players back to streamlit.app.
+STADIA_PUBLIC_URL = "https://stadiaorg.com/premium-arena-access/".rstrip("/")
 
 
 def seat_link(game_id: str, role: str, lang: str) -> str:
     token = make_seat_token(game_id, role, APP_SECRET)
-    return f"{APP_BASE_URL}/?{urlencode({'seat': token, 'lang': lang})}"
+    return f"{STADIA_PUBLIC_URL}/?{urlencode({'seat': token, 'lang': lang})}"
 
 
 def inject_css():
@@ -146,7 +150,7 @@ if not seat:
         st.rerun()
 
     st.info(
-        "v0.1: the player identity is contained in the permanent link, not in browser storage."
+        "v0.3: permanent White/Black links stay inside stadiaorg.com; player identity is server-signed."
     )
     st.stop()
 
@@ -274,5 +278,5 @@ with right:
 
 st.divider()
 st.caption(
-    "Stadia Chess GUI v0.2 — White creates; Black enters their own name; permanent signed player links."
+    "Stadia Chess GUI v0.3 — Stadia-domain permanent links; Black enters their own name; server-signed player identity."
 )
