@@ -1,191 +1,180 @@
-\
-LANGUAGES = {
-    "EN": "English",
-    "IT": "Italiano",
-    "DE": "Deutsch",
-    "FR": "Français",
-    "ES": "Español",
-}
+from __future__ import annotations
 
-TEXT = {
-    "EN": {
-        "title": "Stadia Private Chess",
-        "tagline": "Invite. Play. Return.",
-        "subtitle": "Create one private game, invite a friend with a permanent link, and return later to the same position.",
-        "new_game": "PLAY WITH A FRIEND",
-        "white_name": "Your name",
-        "black_name": "Friend's name",
-        "friend_name_later": "Your friend will enter their own name when they open the invitation link.",
-        "your_name_black": "Your name",
-        "join_game": "JOIN GAME",
-        "black_invitation": "You have been invited to a private chess game.",
-        "black_name_help": "Enter your own name to join as Black.",
-        "time_control": "Time control",
-        "create": "CREATE PRIVATE GAME",
-        "your_link": "YOUR PERMANENT WHITE LINK",
-        "friend_link": "PERMANENT FRIEND LINK — BLACK",
-        "copy_hint": "Keep your White link. Send only the Black link to your friend.",
-        "waiting": "Waiting for your friend",
-        "ready": "Your friend is connected",
-        "start": "START GAME",
-        "black_wait": "You are Black. Waiting for White to start the game.",
-        "side": "Your side",
-        "white": "White",
-        "black": "Black",
-        "turn": "Turn",
-        "moves": "Moves",
-        "make_move": "MAKE MOVE",
-        "select_move": "Choose your move",
-        "return_later": "You can close this page. Open the same permanent link later to return to this exact game.",
-        "finished": "Game finished",
-        "result": "Result",
-        "invalid_link": "This player link is invalid.",
-        "game_missing": "This game no longer exists.",
-        "admin": "Administration",
-    },
-    "IT": {
-        "title": "Stadia Scacchi Privati",
-        "tagline": "Invita. Gioca. Ritorna.",
-        "subtitle": "Crea una partita privata, invita un amico con un link permanente e ritorna più tardi alla stessa posizione.",
-        "new_game": "GIOCA CON UN AMICO",
-        "white_name": "Il tuo nome",
-        "black_name": "Nome dell'amico",
-        "friend_name_later": "Il tuo amico inserirà il proprio nome quando aprirà il link di invito.",
-        "your_name_black": "Il tuo nome",
-        "join_game": "ENTRA NELLA PARTITA",
-        "black_invitation": "Sei stato invitato a una partita privata di scacchi.",
-        "black_name_help": "Inserisci il tuo nome per entrare come Nero.",
-        "time_control": "Tempo di gioco",
-        "create": "CREA PARTITA PRIVATA",
-        "your_link": "IL TUO LINK PERMANENTE — BIANCO",
-        "friend_link": "LINK PERMANENTE DELL'AMICO — NERO",
-        "copy_hint": "Conserva il tuo link Bianco. Invia all'amico solo il link Nero.",
-        "waiting": "In attesa del tuo amico",
-        "ready": "Il tuo amico è collegato",
-        "start": "INIZIA PARTITA",
-        "black_wait": "Sei Nero. Attendi che il Bianco inizi la partita.",
-        "side": "Il tuo colore",
-        "white": "Bianco",
-        "black": "Nero",
-        "turn": "Turno",
-        "moves": "Mosse",
-        "make_move": "ESEGUI MOSSA",
-        "select_move": "Scegli la tua mossa",
-        "return_later": "Puoi chiudere questa pagina. Apri più tardi lo stesso link permanente per tornare esattamente a questa partita.",
-        "finished": "Partita terminata",
-        "result": "Risultato",
-        "invalid_link": "Questo link giocatore non è valido.",
-        "game_missing": "Questa partita non esiste più.",
-        "admin": "Amministrazione",
-    },
-    "DE": {
-        "title": "Stadia Privatschach",
-        "tagline": "Einladen. Spielen. Zurückkehren.",
-        "subtitle": "Erstelle ein privates Spiel, lade einen Freund mit einem permanenten Link ein und kehre später zur gleichen Stellung zurück.",
-        "new_game": "MIT EINEM FREUND SPIELEN",
-        "white_name": "Dein Name",
-        "black_name": "Name des Freundes",
-        "friend_name_later": "Dein Freund gibt seinen eigenen Namen ein, wenn er den Einladungslink öffnet.",
-        "your_name_black": "Dein Name",
-        "join_game": "SPIEL BEITRETEN",
-        "black_invitation": "Du wurdest zu einer privaten Schachpartie eingeladen.",
-        "black_name_help": "Gib deinen eigenen Namen ein, um als Schwarz beizutreten.",
-        "time_control": "Bedenkzeit",
-        "create": "PRIVATES SPIEL ERSTELLEN",
-        "your_link": "DEIN PERMANENTER LINK — WEISS",
-        "friend_link": "PERMANENTER FREUND-LINK — SCHWARZ",
-        "copy_hint": "Bewahre deinen Weiß-Link auf. Sende deinem Freund nur den Schwarz-Link.",
-        "waiting": "Warte auf deinen Freund",
-        "ready": "Dein Freund ist verbunden",
-        "start": "SPIEL STARTEN",
-        "black_wait": "Du spielst Schwarz. Warte, bis Weiß das Spiel startet.",
-        "side": "Deine Farbe",
-        "white": "Weiß",
-        "black": "Schwarz",
-        "turn": "Am Zug",
-        "moves": "Züge",
-        "make_move": "ZUG AUSFÜHREN",
-        "select_move": "Wähle deinen Zug",
-        "return_later": "Du kannst diese Seite schließen. Öffne später denselben permanenten Link, um genau zu diesem Spiel zurückzukehren.",
-        "finished": "Spiel beendet",
-        "result": "Ergebnis",
-        "invalid_link": "Dieser Spieler-Link ist ungültig.",
-        "game_missing": "Dieses Spiel existiert nicht mehr.",
-        "admin": "Administration",
-    },
-    "FR": {
-        "title": "Stadia Échecs Privés",
-        "tagline": "Invitez. Jouez. Revenez.",
-        "subtitle": "Créez une partie privée, invitez un ami avec un lien permanent et revenez plus tard à la même position.",
-        "new_game": "JOUER AVEC UN AMI",
-        "white_name": "Votre nom",
-        "black_name": "Nom de l'ami",
-        "friend_name_later": "Votre ami saisira son propre nom lorsqu’il ouvrira le lien d’invitation.",
-        "your_name_black": "Votre nom",
-        "join_game": "REJOINDRE LA PARTIE",
-        "black_invitation": "Vous avez été invité à une partie d’échecs privée.",
-        "black_name_help": "Saisissez votre propre nom pour rejoindre avec les Noirs.",
-        "time_control": "Cadence",
-        "create": "CRÉER UNE PARTIE PRIVÉE",
-        "your_link": "VOTRE LIEN PERMANENT — BLANCS",
-        "friend_link": "LIEN PERMANENT DE L'AMI — NOIRS",
-        "copy_hint": "Gardez votre lien Blancs. Envoyez uniquement le lien Noirs à votre ami.",
-        "waiting": "En attente de votre ami",
-        "ready": "Votre ami est connecté",
-        "start": "DÉMARRER LA PARTIE",
-        "black_wait": "Vous jouez les Noirs. Attendez que les Blancs démarrent la partie.",
-        "side": "Votre couleur",
-        "white": "Blancs",
-        "black": "Noirs",
-        "turn": "Trait",
-        "moves": "Coups",
-        "make_move": "JOUER LE COUP",
-        "select_move": "Choisissez votre coup",
-        "return_later": "Vous pouvez fermer cette page. Ouvrez plus tard le même lien permanent pour revenir exactement à cette partie.",
-        "finished": "Partie terminée",
-        "result": "Résultat",
-        "invalid_link": "Ce lien joueur n'est pas valide.",
-        "game_missing": "Cette partie n'existe plus.",
-        "admin": "Administration",
-    },
-    "ES": {
-        "title": "Stadia Ajedrez Privado",
-        "tagline": "Invita. Juega. Vuelve.",
-        "subtitle": "Crea una partida privada, invita a un amigo con un enlace permanente y vuelve más tarde a la misma posición.",
-        "new_game": "JUGAR CON UN AMIGO",
-        "white_name": "Tu nombre",
-        "black_name": "Nombre del amigo",
-        "friend_name_later": "Tu amigo introducirá su propio nombre cuando abra el enlace de invitación.",
-        "your_name_black": "Tu nombre",
-        "join_game": "UNIRSE A LA PARTIDA",
-        "black_invitation": "Has sido invitado a una partida privada de ajedrez.",
-        "black_name_help": "Introduce tu propio nombre para entrar con Negras.",
-        "time_control": "Control de tiempo",
-        "create": "CREAR PARTIDA PRIVADA",
-        "your_link": "TU ENLACE PERMANENTE — BLANCAS",
-        "friend_link": "ENLACE PERMANENTE DEL AMIGO — NEGRAS",
-        "copy_hint": "Guarda tu enlace de Blancas. Envía a tu amigo solo el enlace de Negras.",
-        "waiting": "Esperando a tu amigo",
-        "ready": "Tu amigo está conectado",
-        "start": "INICIAR PARTIDA",
-        "black_wait": "Juegas con Negras. Espera a que Blancas inicie la partida.",
-        "side": "Tu color",
-        "white": "Blancas",
-        "black": "Negras",
-        "turn": "Turno",
-        "moves": "Movimientos",
-        "make_move": "HACER MOVIMIENTO",
-        "select_move": "Elige tu movimiento",
-        "return_later": "Puedes cerrar esta página. Abre más tarde el mismo enlace permanente para volver exactamente a esta partida.",
-        "finished": "Partida terminada",
-        "result": "Resultado",
-        "invalid_link": "Este enlace de jugador no es válido.",
-        "game_missing": "Esta partida ya no existe.",
-        "admin": "Administración",
-    },
+import chess
+
+
+PIECE_MAP = {
+    "P": "♙",
+    "N": "♘",
+    "B": "♗",
+    "R": "♖",
+    "Q": "♕",
+    "K": "♔",
+    "p": "♟",
+    "n": "♞",
+    "b": "♝",
+    "r": "♜",
+    "q": "♛",
+    "k": "♚",
 }
 
 
-def tr(lang: str, key: str) -> str:
-    table = TEXT.get(lang, TEXT["EN"])
-    return table.get(key, TEXT["EN"].get(key, key))
+def move_options(fen: str) -> list[tuple[str, str]]:
+    board = chess.Board(fen)
+    options = []
+
+    for move in board.legal_moves:
+        san = board.san(move)
+        options.append((san, move.uci()))
+
+    return options
+
+
+def board_html(fen: str, orientation: str = "white") -> str:
+    board = chess.Board(fen)
+
+    files = list("abcdefgh")
+    ranks = list(range(8, 0, -1))
+
+    if orientation == "black":
+        files = list(reversed(files))
+        ranks = list(reversed(ranks))
+
+    cells = []
+
+    for rank in ranks:
+        for file_ in files:
+            square_name = f"{file_}{rank}"
+            square = chess.parse_square(square_name)
+            piece = board.piece_at(square)
+
+            file_index = chess.square_file(square)
+            rank_index = chess.square_rank(square)
+
+            is_light = (file_index + rank_index) % 2 == 0
+            square_class = "light" if is_light else "dark"
+
+            piece_html = PIECE_MAP.get(piece.symbol(), "&nbsp;") if piece else "&nbsp;"
+
+            # coordinate labels
+            coord_bottom = ""
+            coord_top = ""
+            coord_left = ""
+            coord_right = ""
+
+            # show file letters on bottom edge
+            if orientation == "white":
+                if rank == 1:
+                    coord_bottom = f'<span class="cb-file">{file_}</span>'
+                if file_ == "a":
+                    coord_left = f'<span class="cb-rank">{rank}</span>'
+            else:
+                if rank == 8:
+                    coord_top = f'<span class="cb-file">{file_}</span>'
+                if file_ == "h":
+                    coord_right = f'<span class="cb-rank">{rank}</span>'
+
+            cells.append(
+                f"""
+                <div class="cb-square {square_class}">
+                    {coord_bottom}
+                    {coord_top}
+                    {coord_left}
+                    {coord_right}
+                    <span class="cb-piece">{piece_html}</span>
+                </div>
+                """
+            )
+
+    return f"""
+    <style>
+    .cb-wrap {{
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }}
+
+    .cb-board {{
+        width: min(92vw, 640px);
+        aspect-ratio: 1 / 1;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        border: 2px solid #1f2a44;
+        border-radius: 14px;
+        overflow: hidden;
+        box-sizing: border-box;
+        background: #1f2a44;
+    }}
+
+    .cb-square {{
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }}
+
+    .cb-square.light {{
+        background: #e7d2a4;
+    }}
+
+    .cb-square.dark {{
+        background: #a9744a;
+    }}
+
+    .cb-piece {{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        font-size: clamp(28px, 4.2vw, 48px);
+        line-height: 1;
+        user-select: none;
+    }}
+
+    .cb-file {{
+        position: absolute;
+        right: 6px;
+        bottom: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        color: rgba(0,0,0,0.65);
+        line-height: 1;
+    }}
+
+    .cb-rank {{
+        position: absolute;
+        left: 6px;
+        top: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        color: rgba(0,0,0,0.65);
+        line-height: 1;
+    }}
+
+    .cb-square.dark .cb-file,
+    .cb-square.dark .cb-rank {{
+        color: rgba(255,255,255,0.75);
+    }}
+
+    @media (max-width: 700px) {{
+        .cb-board {{
+            width: min(96vw, 520px);
+        }}
+
+        .cb-piece {{
+            font-size: clamp(24px, 6vw, 40px);
+        }}
+    }}
+    </style>
+
+    <div class="cb-wrap">
+        <div class="cb-board">
+            {''.join(cells)}
+        </div>
+    </div>
+    """
