@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from html import escape
 from textwrap import dedent
 from urllib.parse import quote, urlencode
 
 import chess
 import streamlit as st
-from streamlit_image_coordinates import streamlit_image_coordinates
+import streamlit.components.v1 as components
 
 import chess_db as db
-from chess_board import click_to_square, legal_sources, render_board_image, resolve_move
 from chess_tokens import make_seat_token, verify_seat_token
 from i18n import LANGUAGES, tr
 
@@ -26,10 +26,15 @@ db.init_db()
 
 STADIA_PUBLIC_URL = "https://stadiaorg.com/stadia-premium-arena/".rstrip("/")
 
-# Fixed board viewport prevents the component iframe from changing height
-# during a move, which keeps the page anchored in place.
+# Browser-native chess board.
+# It uses its own fixed-size iframe and handles piece selection locally,
+# so clicking a piece does NOT rerun or move the Streamlit page.
 BOARD_DISPLAY_PX = 460
-BOARD_SHELL_PX = 620
+CHESS_BOARD_FRONTEND = Path(__file__).parent / "chess_board_frontend"
+stadia_chess_board = components.declare_component(
+    "stadia_chess_board_v087",
+    path=str(CHESS_BOARD_FRONTEND),
+)
 
 
 def secret(name: str, default: str) -> str:
@@ -342,236 +347,93 @@ with st.expander(ui(lang, "private_return")):
     st.code(seat_link(seat.game_id, seat.role, lang), language=None)
 
 
-# STABLE IMAGE BOARD — NO 64 BUTTON GRID, NO CONTINUOUS PAGE RERUN
-selection_key = f"selected_square_{seat.game_id}_{seat.role}"
-click_time_key = f"last_board_click_{seat.game_id}_{seat.role}"
-board_component_key = f"stable_board_{seat.game_id}_{seat.role}"
+# STADIA CHESS BOARD v0.8.7 — BROWSER-NATIVE, FIXED, NO FONT DEPENDENCY
+board_component_key = f"stadia_board_v087_{seat.game_id}_{seat.role}"
+last_move_nonce_key = f"stadia_board_nonce_{seat.game_id}_{seat.role}"
 
 
-def apply_square_click(
-    coord: str,
-    current: dict,
-) -> bool:
+def handle_completed_board_move() -> None:
     """
-    Apply one click to the two-click move state.
-
-    Returns True only when a real chess move was completed.
+    The browser board sends a value ONLY after the player has selected both
+    source and destination. The first click stays entirely inside JavaScript,
+    so it cannot rerun, scroll, resize, or make the WordPress iframe jump.
     """
-    board = chess.Board(current["fen"])
-    turn_role = (
-        "white"
-        if board.turn == chess.WHITE
-        else "black"
+    payload = st.session_state.get(
+        board_component_key
     )
+
+    if not isinstance(payload, dict):
+        return
+
+    nonce = payload.get("nonce")
+    uci = str(payload.get("move") or "").lower().strip()
+
+    if (
+        not nonce
+        or not uci
+        or nonce == st.session_state.get(last_move_nonce_key)
+    ):
+        return
+
+    st.session_state[last_move_nonce_key] = nonce
+
+    current = db.get_game(seat.game_id)
+    if not current:
+        return
+
+    board = chess.Board(current["fen"])
+    turn_role = "white" if board.turn == chess.WHITE else "black"
 
     if (
         current["status"] != "active"
         or seat.role != turn_role
     ):
-        st.session_state[selection_key] = ""
-        return False
-
-    coord = (
-        coord
-        or ""
-    ).lower().strip()
-
-    selected = str(
-        st.session_state.get(
-            selection_key,
-            "",
-        )
-    ).lower().strip()
-
-    sources = legal_sources(
-        current["fen"]
-    )
-
-    if not selected:
-        if coord in sources:
-            st.session_state[
-                selection_key
-            ] = coord
-        return False
-
-    if coord == selected:
-        st.session_state[
-            selection_key
-        ] = ""
-        return False
-
-    if coord in sources:
-        st.session_state[
-            selection_key
-        ] = coord
-        return False
-
-    uci = resolve_move(
-        current["fen"],
-        selected,
-        coord,
-    )
-
-    if not uci:
-        return False
+        return
 
     try:
+        # db.make_move remains the authoritative server-side validator.
         db.make_move(
             seat.game_id,
             uci,
         )
-        st.session_state[
-            selection_key
-        ] = ""
-        return True
-
     except ValueError as exc:
-        st.session_state[
-            "chess_move_error"
-        ] = str(exc)
-        st.session_state[
-            selection_key
-        ] = ""
-        return False
+        st.session_state["chess_move_error"] = str(exc)
 
 
-def handle_board_component_click() -> None:
+@st.fragment(run_every="2s")
+def live_board_fragment() -> None:
     """
-    Process the image-component click as a widget callback.
+    One stable fragment owns status, board and move list.
 
-    The callback runs BEFORE Streamlit redraws the fragment, so the new
-    selection or completed move is already in session/database state when the
-    fragment renders. This removes the extra st.rerun() that caused the board
-    to jump/float after every move.
+    Polling happens by rerunning this fragment only. The custom component keeps
+    the same iframe/key and updates its DOM in place, so the outer page remains
+    anchored while waiting for the other player.
     """
-    raw = st.session_state.get(
-        board_component_key
-    )
-
-    if not isinstance(
-        raw,
-        dict,
-    ):
-        return
-
-    click_time = raw.get(
-        "unix_time"
-    )
-
-    if (
-        not click_time
-        or click_time
-        == st.session_state.get(
-            click_time_key
-        )
-    ):
-        return
-
-    st.session_state[
-        click_time_key
-    ] = click_time
-
-    current = db.get_game(
-        seat.game_id
-    )
+    current = db.get_game(seat.game_id)
 
     if not current:
+        st.error(tr(lang, "game_missing"))
         return
 
-    coord = click_to_square(
-        raw.get(
-            "x",
-            0,
-        ),
-        raw.get(
-            "y",
-            0,
-        ),
-        width=raw.get(
-            "width",
-            720,
-        ),
-        height=raw.get(
-            "height",
-            720,
-        ),
-        orientation=seat.role,
-    )
-
-    if coord:
-        apply_square_click(
-            coord,
-            current,
-        )
-
-
-@st.fragment
-def board_fragment() -> None:
-    current = db.get_game(
-        seat.game_id
-    )
-
-    if not current:
-        st.error(
-            tr(
-                lang,
-                "game_missing",
-            )
-        )
-        return
-
-    board = chess.Board(
-        current["fen"]
-    )
-
-    turn_role = (
-        "white"
-        if board.turn == chess.WHITE
-        else "black"
-    )
+    board = chess.Board(current["fen"])
+    turn_role = "white" if board.turn == chess.WHITE else "black"
 
     can_move = (
         current["status"] == "active"
         and seat.role == turn_role
     )
 
-    selected_square = str(
-        st.session_state.get(
-            selection_key,
-            "",
-        )
-    ).lower().strip()
-
-    if (
-        not can_move
-        or selected_square
-        not in legal_sources(
-            current["fen"]
-        )
-    ):
-        selected_square = ""
-        st.session_state[
-            selection_key
-        ] = ""
-
     move_error = st.session_state.pop(
         "chess_move_error",
         None,
     )
-
     if move_error:
-        st.error(
-            move_error
-        )
+        st.error(move_error)
 
-    status_col, turn_col = st.columns(
-        [1, 2]
-    )
+    status_col, turn_col = st.columns([1, 2])
 
     with status_col:
-        st.markdown(
-            f"**{ui(lang, 'status')}**"
-        )
+        st.markdown(f"**{ui(lang, 'status')}**")
         render_html(
             f'<span class="sv-status">'
             f'{escape(str(current["status"]).upper())}'
@@ -595,10 +457,7 @@ def board_fragment() -> None:
                 if lang == "IT"
                 else f"{tr(lang, 'turn')}: {tr(lang, turn_role)}"
             )
-
-        st.markdown(
-            f"### {turn_text}"
-        )
+        st.markdown(f"### {turn_text}")
 
     left, right = st.columns(
         [3, 1.15],
@@ -606,34 +465,27 @@ def board_fragment() -> None:
     )
 
     with left:
-        board_image = render_board_image(
-            current["fen"],
-            seat.role,
-            selected_square=selected_square,
-            interactive=can_move,
+        legal_moves = (
+            [move.uci() for move in board.legal_moves]
+            if can_move
+            else []
         )
 
-        streamlit_image_coordinates(
-            board_image,
+        stadia_chess_board(
+            fen=current["fen"],
+            orientation=seat.role,
+            interactive=can_move,
+            legal_moves=legal_moves,
+            size=BOARD_DISPLAY_PX,
             key=board_component_key,
-            width=BOARD_DISPLAY_PX,
-            height=BOARD_DISPLAY_PX,
-            cursor=(
-                "pointer"
-                if can_move
-                else "default"
-            ),
-            on_click=handle_board_component_click,
+            on_change=handle_completed_board_move,
         )
 
     with right:
-        moves = db.get_moves(
-            seat.game_id
-        )
+        moves = db.get_moves(seat.game_id)
 
         st.markdown(
-            f"**{ui(lang, 'moves')} "
-            f"({len(moves)})**"
+            f"**{ui(lang, 'moves')} ({len(moves)})**"
         )
 
         if moves:
@@ -653,102 +505,17 @@ def board_fragment() -> None:
                 f"{tr(lang, 'result')}: "
                 f"{current['result']}"
             )
-
         elif can_move:
-            if selected_square:
-                st.success(
-                    ui(
-                        lang,
-                        "selected_piece",
-                    )
-                )
-                st.info(
-                    ui(
-                        lang,
-                        "click_destination",
-                    )
-                )
-            else:
-                st.info(
-                    ui(
-                        lang,
-                        "click_piece",
-                    )
-                )
-
+            st.info(ui(lang, "click_piece"))
         else:
-            st.info(
-                ui(
-                    lang,
-                    "waiting_other",
-                )
-            )
+            st.info(ui(lang, "waiting_other"))
 
 
-# On your turn there is no timer and no continuous refresh.
-# The board reruns only when you actually click it.
-#
-# The outer shell has a fixed height. Even while the fragment refreshes,
-# the page layout therefore keeps the same geometry and does not jump.
-with st.container(
-    height=BOARD_SHELL_PX,
-    border=False,
-):
-    board_fragment()
-
-
-# Only the waiting player polls the database.
-# The polling fragment is tiny and does not redraw the board.
-game_after_board = db.get_game(
-    seat.game_id
-)
-
-if game_after_board:
-    board_after = chess.Board(
-        game_after_board["fen"]
-    )
-
-    turn_after = (
-        "white"
-        if board_after.turn == chess.WHITE
-        else "black"
-    )
-
-    waiting_for_opponent = (
-        game_after_board["status"] == "active"
-        and seat.role != turn_after
-    )
-
-    if waiting_for_opponent:
-        known_fen = game_after_board["fen"]
-
-        @st.fragment(
-            run_every="2s"
-        )
-        def opponent_poll() -> None:
-            latest = db.get_game(
-                seat.game_id
-            )
-
-            if not latest:
-                return
-
-            if (
-                latest["fen"] != known_fen
-                or latest["status"]
-                != game_after_board["status"]
-            ):
-                # Full rerun happens once, only when the opponent
-                # actually moves or the game ends.
-                st.rerun()
-
-        opponent_poll()
-
+live_board_fragment()
 
 st.divider()
-
 st.caption(
-    "Stadia Chess GUI v0.8.6 — embedded standard pieces; "
-    "fixed board viewport; stable two-click moves; "
-    "White/Black orientations."
+    "Stadia Chess GUI v0.8.7 FINAL — browser-native board; "
+    "embedded real chess-piece images; local piece selection; "
+    "fragment-only synchronization; fixed board position."
 )
