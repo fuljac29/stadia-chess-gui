@@ -1,371 +1,197 @@
 from __future__ import annotations
 
-import html
-from urllib.parse import urlencode
+from collections.abc import Callable
 
 import chess
+import streamlit as st
 
 
 PIECES = {
-    "P": "♙",
-    "N": "♘",
-    "B": "♗",
-    "R": "♖",
-    "Q": "♕",
-    "K": "♔",
-    "p": "♟",
-    "n": "♞",
-    "b": "♝",
-    "r": "♜",
-    "q": "♛",
-    "k": "♚",
+    "P": "♙", "N": "♘", "B": "♗", "R": "♖", "Q": "♕", "K": "♔",
+    "p": "♟", "n": "♞", "b": "♝", "r": "♜", "q": "♛", "k": "♚",
 }
 
 
-def _player_href(
-    seat_token: str,
-    lang: str,
-    *,
-    src: str = "",
-    move: str = "",
-) -> str:
-    params = {
-        "embed": "true",
-        "seat": seat_token,
-        "lang": lang,
+def _display_squares(orientation: str) -> list[str]:
+    if orientation == "black":
+        ranks = range(1, 9)
+        files = "hgfedcba"
+    else:
+        ranks = range(8, 0, -1)
+        files = "abcdefgh"
+
+    return [f"{file_}{rank}" for rank in ranks for file_ in files]
+
+
+def legal_sources(fen: str) -> set[str]:
+    board = chess.Board(fen)
+    return {chess.square_name(move.from_square) for move in board.legal_moves}
+
+
+def legal_targets(fen: str, source: str) -> set[str]:
+    source = (source or "").lower().strip()
+    if not source:
+        return set()
+
+    board = chess.Board(fen)
+    return {
+        chess.square_name(move.to_square)
+        for move in board.legal_moves
+        if chess.square_name(move.from_square) == source
     }
 
-    if src:
-        params["src"] = src
 
-    if move:
-        params["move"] = move
-
-    return "?" + urlencode(params)
-
-
-def _promotion_preference(
-    move: chess.Move,
-) -> int:
-    # If several promotion moves reach the same square,
-    # use Queen by default to keep the click flow simple.
-    if move.promotion == chess.QUEEN:
-        return 0
-    if move.promotion == chess.ROOK:
-        return 1
-    if move.promotion == chess.BISHOP:
-        return 2
-    if move.promotion == chess.KNIGHT:
-        return 3
-    return 4
-
-
-def board_html(
-    fen: str,
-    orientation: str = "white",
-    *,
-    seat_token: str = "",
-    lang: str = "EN",
-    interactive: bool = False,
-    selected_square: str = "",
-) -> str:
+def resolve_move(fen: str, source: str, destination: str) -> str | None:
+    """Resolve source→destination to a legal UCI move; queen promotion is preferred."""
+    source = (source or "").lower().strip()
+    destination = (destination or "").lower().strip()
     board = chess.Board(fen)
 
-    if orientation == "black":
-        ranks = range(0, 8)
-        files = range(7, -1, -1)
-    else:
-        ranks = range(7, -1, -1)
-        files = range(0, 8)
+    candidates = [
+        move
+        for move in board.legal_moves
+        if chess.square_name(move.from_square) == source
+        and chess.square_name(move.to_square) == destination
+    ]
+    if not candidates:
+        return None
 
-    legal_by_source: dict[str, list[chess.Move]] = {}
+    promotion_order = {
+        chess.QUEEN: 0,
+        chess.ROOK: 1,
+        chess.BISHOP: 2,
+        chess.KNIGHT: 3,
+        None: 4,
+    }
+    candidates.sort(key=lambda move: promotion_order.get(move.promotion, 9))
+    return candidates[0].uci()
 
-    if interactive:
-        for move in board.legal_moves:
-            source = chess.square_name(
-                move.from_square
-            )
-            legal_by_source.setdefault(
-                source,
-                [],
-            ).append(move)
 
-    selected_square = (
-        selected_square or ""
-    ).lower().strip()
+def render_board(
+    fen: str,
+    orientation: str,
+    *,
+    game_key: str,
+    selected_square: str = "",
+    interactive: bool = True,
+    on_square_click: Callable[[str], None] | None = None,
+) -> None:
+    """Render the board with native Streamlit buttons, so clicks do not navigate the iframe."""
+    board = chess.Board(fen)
+    squares = _display_squares(orientation)
+    selected_square = (selected_square or "").lower().strip()
+    sources = legal_sources(fen) if interactive else set()
 
-    if selected_square not in legal_by_source:
+    if selected_square not in sources:
         selected_square = ""
 
-    destination_moves: dict[str, chess.Move] = {}
+    targets = legal_targets(fen, selected_square) if selected_square else set()
+    safe_game_key = "".join(ch if ch.isalnum() else "_" for ch in game_key)
 
-    if selected_square:
-        candidates = sorted(
-            legal_by_source[selected_square],
-            key=_promotion_preference,
-        )
-
-        for move in candidates:
-            destination = chess.square_name(
-                move.to_square
-            )
-            destination_moves.setdefault(
-                destination,
-                move,
-            )
-
-    cells = []
-
-    for rank in ranks:
-        for file in files:
-            square = chess.square(
-                file,
-                rank,
-            )
-            coord = chess.square_name(
-                square
-            )
-            piece = board.piece_at(
-                square
-            )
-
-            symbol = (
-                PIECES.get(
-                    piece.symbol(),
-                    "",
-                )
-                if piece
-                else ""
-            )
-
-            light = (
-                (file + rank) % 2 == 1
-            )
-
-            classes = [
-                "sq",
-                "light" if light else "dark",
-            ]
-
-            href = ""
-            title = coord
-
-            if interactive:
-                if selected_square:
-                    if coord == selected_square:
-                        classes += [
-                            "selected",
-                            "clickable",
-                        ]
-                        href = _player_href(
-                            seat_token,
-                            lang,
-                        )
-
-                    elif coord in destination_moves:
-                        classes += [
-                            "target",
-                            "clickable",
-                        ]
-
-                        if piece:
-                            classes.append(
-                                "capture"
-                            )
-
-                        href = _player_href(
-                            seat_token,
-                            lang,
-                            move=destination_moves[
-                                coord
-                            ].uci(),
-                        )
-
-                    elif coord in legal_by_source:
-                        classes += [
-                            "selectable",
-                            "clickable",
-                        ]
-                        href = _player_href(
-                            seat_token,
-                            lang,
-                            src=coord,
-                        )
-
-                elif coord in legal_by_source:
-                    classes += [
-                        "selectable",
-                        "clickable",
-                    ]
-                    href = _player_href(
-                        seat_token,
-                        lang,
-                        src=coord,
-                    )
-
-            class_text = " ".join(
-                classes
-            )
-            piece_html = html.escape(
-                symbol
-            )
-
-            inner = (
-                f'<span class="piece">'
-                f'{piece_html}'
-                f'</span>'
-            )
-
-            if href:
-                cells.append(
-                    f'<a class="{class_text}" '
-                    f'href="{html.escape(href, quote=True)}" '
-                    f'target="_self" '
-                    f'title="{html.escape(title, quote=True)}">'
-                    f'{inner}</a>'
-                )
-            else:
-                cells.append(
-                    f'<div class="{class_text}" '
-                    f'title="{html.escape(title, quote=True)}">'
-                    f'{inner}</div>'
-                )
-
-    return f"""
-    <style>
-      .stadia-board {{
-        display:grid;
-        grid-template-columns:repeat(8,minmax(0,1fr));
-        grid-template-rows:repeat(8,minmax(0,1fr));
-        width:min(100%,720px);
-        aspect-ratio:1 / 1;
+    css_rules = [f"""
+    .st-key-chess_board_{safe_game_key} {{
+        max-width:720px;
+        margin:0 auto;
         border:3px solid #111827;
         border-radius:16px;
         overflow:hidden;
-        box-sizing:border-box;
         box-shadow:0 18px 45px rgba(17,24,39,.12);
-      }}
+    }}
+    .st-key-chess_board_{safe_game_key} div[data-testid="stHorizontalBlock"],
+    .st-key-chess_board_{safe_game_key} div[data-testid="stVerticalBlock"] {{
+        gap:0 !important;
+    }}
+    .st-key-chess_board_{safe_game_key} button {{
+        width:100% !important;
+        aspect-ratio:1/1 !important;
+        min-height:0 !important;
+        height:auto !important;
+        padding:0 !important;
+        margin:0 !important;
+        border:0 !important;
+        border-radius:0 !important;
+        font-family:"Segoe UI Symbol","Arial Unicode MS",sans-serif !important;
+        font-size:clamp(30px,5.6vw,64px) !important;
+        line-height:1 !important;
+        position:relative !important;
+        box-shadow:none;
+    }}
+    .st-key-chess_board_{safe_game_key} button:disabled {{
+        opacity:1 !important;
+        cursor:default !important;
+    }}
+    """]
 
-      .stadia-board .sq {{
-        position:relative;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        width:100%;
-        height:100%;
-        min-width:0;
-        min-height:0;
-        overflow:hidden;
-        box-sizing:border-box;
-        text-decoration:none;
-        color:inherit;
-      }}
+    for coord in squares:
+        square = chess.parse_square(coord)
+        file_index = chess.square_file(square)
+        rank_index = chess.square_rank(square)
+        is_light = (file_index + rank_index) % 2 == 1
+        background = "#f2d9a5" if is_light else "#9b6845"
+        key_class = f".st-key-sq_{safe_game_key}_{coord}"
 
-      .stadia-board .light {{
-        background:#f2d9a5;
-      }}
-
-      .stadia-board .dark {{
-        background:#9b6845;
-      }}
-
-      .stadia-board .piece {{
-        position:relative;
-        z-index:2;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        width:100%;
-        height:100%;
-        font-family:"Segoe UI Symbol","Arial Unicode MS",sans-serif;
-        font-size:clamp(30px,6.3vw,70px);
-        line-height:1;
-        filter:drop-shadow(0 1px 0 rgba(255,255,255,.35));
-        user-select:none;
-        pointer-events:none;
-      }}
-
-      .stadia-board .clickable {{
-        cursor:pointer;
-      }}
-
-      .stadia-board .selectable::before {{
-        content:"";
-        position:absolute;
-        inset:8%;
-        z-index:1;
-        border:3px solid rgba(111,76,255,.32);
-        border-radius:10px;
-        box-sizing:border-box;
-      }}
-
-      .stadia-board .selected {{
-        box-shadow:
-          inset 0 0 0 5px #6f4cff,
-          inset 0 0 0 8px rgba(255,255,255,.55);
-      }}
-
-      .stadia-board .target::after {{
-        content:"";
-        position:absolute;
-        z-index:1;
-        width:24%;
-        aspect-ratio:1 / 1;
-        border-radius:999px;
-        background:rgba(44,62,80,.42);
-        pointer-events:none;
-      }}
-
-      .stadia-board .target.capture::after {{
-        width:78%;
-        aspect-ratio:1 / 1;
-        background:transparent;
-        border:5px solid rgba(44,62,80,.42);
-        box-sizing:border-box;
-      }}
-
-      .stadia-board .clickable:hover {{
-        filter:brightness(1.06);
-      }}
-
-      @media(max-width:760px) {{
-        .stadia-board .selectable::before {{
-          inset:6%;
-          border-width:2px;
+        css_rules.append(f"""
+        {key_class} button,
+        {key_class} button:hover,
+        {key_class} button:focus {{
+            background:{background} !important;
+            color:#111827 !important;
         }}
+        """)
 
-        .stadia-board .selected {{
-          box-shadow:
-            inset 0 0 0 4px #6f4cff,
-            inset 0 0 0 6px rgba(255,255,255,.55);
-        }}
-      }}
-    </style>
+        if coord in sources and interactive:
+            css_rules.append(f"""
+            {key_class} button {{ cursor:pointer !important; }}
+            {key_class} button:hover {{ filter:brightness(1.07); }}
+            """)
 
-    <div class="stadia-board">
-      {''.join(cells)}
-    </div>
-    """
+        if coord == selected_square:
+            css_rules.append(f"""
+            {key_class} button {{
+                box-shadow:inset 0 0 0 5px #6f4cff,
+                           inset 0 0 0 8px rgba(255,255,255,.55) !important;
+            }}
+            """)
 
+        if coord in targets:
+            if board.piece_at(square):
+                css_rules.append(f"""
+                {key_class} button {{
+                    box-shadow:inset 0 0 0 5px rgba(44,62,80,.55) !important;
+                }}
+                """)
+            else:
+                css_rules.append(f"""
+                {key_class} button::after {{
+                    content:"";
+                    position:absolute;
+                    width:22%;
+                    aspect-ratio:1/1;
+                    border-radius:999px;
+                    background:rgba(44,62,80,.48);
+                    pointer-events:none;
+                }}
+                """)
 
-def move_options(
-    fen: str,
-) -> list[tuple[str, str]]:
-    # Backward compatibility with older admin/test code.
-    board = chess.Board(fen)
+    st.markdown("<style>" + "\n".join(css_rules) + "</style>", unsafe_allow_html=True)
 
-    result = []
+    with st.container(key=f"chess_board_{safe_game_key}", border=False):
+        for row_start in range(0, 64, 8):
+            row_squares = squares[row_start:row_start + 8]
+            cols = st.columns(8, gap=None)
 
-    for move in board.legal_moves:
-        result.append(
-            (
-                board.san(move),
-                move.uci(),
-            )
-        )
+            for col, coord in zip(cols, row_squares):
+                square = chess.parse_square(coord)
+                piece = board.piece_at(square)
+                symbol = PIECES.get(piece.symbol(), " ") if piece else " "
 
-    result.sort(
-        key=lambda x: x[0]
-    )
-
-    return result
+                with col:
+                    st.button(
+                        symbol,
+                        key=f"sq_{safe_game_key}_{coord}",
+                        help=coord,
+                        disabled=not interactive,
+                        use_container_width=True,
+                        on_click=on_square_click,
+                        args=(coord,),
+                    )
