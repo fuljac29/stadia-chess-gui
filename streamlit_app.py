@@ -7,9 +7,10 @@ from urllib.parse import quote, urlencode
 
 import chess
 import streamlit as st
+from streamlit_image_coordinates import streamlit_image_coordinates
 
 import chess_db as db
-from chess_board import legal_sources, render_board, resolve_move
+from chess_board import click_to_square, legal_sources, render_board_image, resolve_move
 from chess_tokens import make_seat_token, verify_seat_token
 from i18n import LANGUAGES, tr
 
@@ -336,113 +337,385 @@ with st.expander(ui(lang, "private_return")):
     st.code(seat_link(seat.game_id, seat.role, lang), language=None)
 
 
-# SMOOTH BOARD — piece selection and destination clicks rerun only this fragment.
+# STABLE IMAGE BOARD — NO 64 BUTTON GRID, NO CONTINUOUS PAGE RERUN
 selection_key = f"selected_square_{seat.game_id}_{seat.role}"
+click_time_key = f"last_board_click_{seat.game_id}_{seat.role}"
 
 
-def handle_square_click(coord: str) -> None:
-    current = db.get_game(seat.game_id)
-    if not current:
-        return
+def apply_square_click(
+    coord: str,
+    current: dict,
+) -> bool:
+    """
+    Apply one click to the two-click move state.
 
+    Returns True only when a real chess move was completed.
+    """
     board = chess.Board(current["fen"])
-    turn_role = "white" if board.turn == chess.WHITE else "black"
-    if current["status"] != "active" or seat.role != turn_role:
-        st.session_state[selection_key] = ""
-        return
+    turn_role = (
+        "white"
+        if board.turn == chess.WHITE
+        else "black"
+    )
 
-    coord = (coord or "").lower().strip()
-    selected = str(st.session_state.get(selection_key, "")).lower().strip()
-    sources = legal_sources(current["fen"])
+    if (
+        current["status"] != "active"
+        or seat.role != turn_role
+    ):
+        st.session_state[selection_key] = ""
+        return False
+
+    coord = (
+        coord
+        or ""
+    ).lower().strip()
+
+    selected = str(
+        st.session_state.get(
+            selection_key,
+            "",
+        )
+    ).lower().strip()
+
+    sources = legal_sources(
+        current["fen"]
+    )
 
     if not selected:
         if coord in sources:
-            st.session_state[selection_key] = coord
-        return
+            st.session_state[
+                selection_key
+            ] = coord
+        return False
 
     if coord == selected:
-        st.session_state[selection_key] = ""
-        return
+        st.session_state[
+            selection_key
+        ] = ""
+        return False
 
     if coord in sources:
-        st.session_state[selection_key] = coord
-        return
+        st.session_state[
+            selection_key
+        ] = coord
+        return False
 
-    uci = resolve_move(current["fen"], selected, coord)
+    uci = resolve_move(
+        current["fen"],
+        selected,
+        coord,
+    )
+
     if not uci:
-        st.session_state[selection_key] = ""
-        return
+        return False
 
     try:
-        db.make_move(seat.game_id, uci)
-        st.session_state[selection_key] = ""
+        db.make_move(
+            seat.game_id,
+            uci,
+        )
+        st.session_state[
+            selection_key
+        ] = ""
+        return True
+
     except ValueError as exc:
-        st.session_state["chess_move_error"] = str(exc)
-        st.session_state[selection_key] = ""
+        st.session_state[
+            "chess_move_error"
+        ] = str(exc)
+        st.session_state[
+            selection_key
+        ] = ""
+        return False
 
 
-@st.fragment(run_every="2s")
-def live_game() -> None:
-    current = db.get_game(seat.game_id)
+@st.fragment
+def board_fragment() -> None:
+    current = db.get_game(
+        seat.game_id
+    )
+
     if not current:
-        st.error(tr(lang, "game_missing"))
+        st.error(
+            tr(
+                lang,
+                "game_missing",
+            )
+        )
         return
 
-    board = chess.Board(current["fen"])
-    turn_role = "white" if board.turn == chess.WHITE else "black"
-    can_move = current["status"] == "active" and seat.role == turn_role
-    selected_square = str(st.session_state.get(selection_key, "")).lower().strip()
+    board = chess.Board(
+        current["fen"]
+    )
 
-    if not can_move or selected_square not in legal_sources(current["fen"]):
+    turn_role = (
+        "white"
+        if board.turn == chess.WHITE
+        else "black"
+    )
+
+    can_move = (
+        current["status"] == "active"
+        and seat.role == turn_role
+    )
+
+    selected_square = str(
+        st.session_state.get(
+            selection_key,
+            "",
+        )
+    ).lower().strip()
+
+    if (
+        not can_move
+        or selected_square
+        not in legal_sources(
+            current["fen"]
+        )
+    ):
         selected_square = ""
-        st.session_state[selection_key] = ""
+        st.session_state[
+            selection_key
+        ] = ""
 
-    move_error = st.session_state.pop("chess_move_error", None)
+    move_error = st.session_state.pop(
+        "chess_move_error",
+        None,
+    )
+
     if move_error:
-        st.error(move_error)
-
-    status_col, turn_col = st.columns([1, 2])
-    with status_col:
-        st.markdown(f"**{ui(lang, 'status')}**")
-        render_html(f'<span class="sv-status">{escape(str(current["status"]).upper())}</span>')
-    with turn_col:
-        st.markdown(f"### {tr(lang, 'turn')}: {tr(lang, turn_role)}")
-
-    left, right = st.columns([3, 1.15], gap="large")
-    with left:
-        render_board(
-            current["fen"],
-            seat.role,
-            game_key=f"{seat.game_id[:12]}_{seat.role}",
-            selected_square=selected_square,
-            interactive=can_move,
-            on_square_click=handle_square_click,
+        st.error(
+            move_error
         )
 
+    status_col, turn_col = st.columns(
+        [1, 2]
+    )
+
+    with status_col:
+        st.markdown(
+            f"**{ui(lang, 'status')}**"
+        )
+        render_html(
+            f'<span class="sv-status">'
+            f'{escape(str(current["status"]).upper())}'
+            f'</span>'
+        )
+
+    with turn_col:
+        if turn_role == "white":
+            turn_text = (
+                "White to move"
+                if lang == "EN"
+                else "Muove il Bianco"
+                if lang == "IT"
+                else f"{tr(lang, 'turn')}: {tr(lang, turn_role)}"
+            )
+        else:
+            turn_text = (
+                "Black to move"
+                if lang == "EN"
+                else "Muove il Nero"
+                if lang == "IT"
+                else f"{tr(lang, 'turn')}: {tr(lang, turn_role)}"
+            )
+
+        st.markdown(
+            f"### {turn_text}"
+        )
+
+    left, right = st.columns(
+        [3, 1.15],
+        gap="large",
+    )
+
+    with left:
+        board_image = render_board_image(
+            current["fen"],
+            seat.role,
+            selected_square=selected_square,
+            interactive=can_move,
+        )
+
+        click = streamlit_image_coordinates(
+            board_image,
+            key=(
+                f"stable_board_"
+                f"{seat.game_id}_"
+                f"{seat.role}"
+            ),
+            use_column_width="auto",
+            cursor=(
+                "pointer"
+                if can_move
+                else "default"
+            ),
+        )
+
+        if click:
+            click_time = click.get(
+                "unix_time"
+            )
+
+            if (
+                click_time
+                and click_time
+                != st.session_state.get(
+                    click_time_key
+                )
+            ):
+                st.session_state[
+                    click_time_key
+                ] = click_time
+
+                coord = click_to_square(
+                    click.get("x", 0),
+                    click.get("y", 0),
+                    width=click.get(
+                        "width",
+                        720,
+                    ),
+                    height=click.get(
+                        "height",
+                        720,
+                    ),
+                    orientation=seat.role,
+                )
+
+                if coord:
+                    completed_move = (
+                        apply_square_click(
+                            coord,
+                            current,
+                        )
+                    )
+
+                    if completed_move:
+                        # One full rerun only after the move is finished,
+                        # so the page can enter the "waiting for opponent"
+                        # state. Piece selection itself never reruns the page.
+                        st.rerun()
+
+                    st.rerun(
+                        scope="fragment"
+                    )
+
     with right:
-        moves = db.get_moves(seat.game_id)
-        st.markdown(f"**{ui(lang, 'moves')} ({len(moves)})**")
+        moves = db.get_moves(
+            seat.game_id
+        )
+
+        st.markdown(
+            f"**{ui(lang, 'moves')} "
+            f"({len(moves)})**"
+        )
+
         if moves:
-            st.code("  ".join(move["san"] for move in moves[-18:]), language=None)
+            st.code(
+                "  ".join(
+                    move["san"]
+                    for move in moves[-18:]
+                ),
+                language=None,
+            )
         else:
             st.caption("—")
 
         if current["status"] == "finished":
-            st.success(f"{tr(lang, 'finished')} — {tr(lang, 'result')}: {current['result']}")
+            st.success(
+                f"{tr(lang, 'finished')} — "
+                f"{tr(lang, 'result')}: "
+                f"{current['result']}"
+            )
+
         elif can_move:
             if selected_square:
-                st.success(ui(lang, "selected_piece"))
-                st.info(ui(lang, "click_destination"))
+                st.success(
+                    ui(
+                        lang,
+                        "selected_piece",
+                    )
+                )
+                st.info(
+                    ui(
+                        lang,
+                        "click_destination",
+                    )
+                )
             else:
-                st.info(ui(lang, "click_piece"))
+                st.info(
+                    ui(
+                        lang,
+                        "click_piece",
+                    )
+                )
+
         else:
-            st.info(ui(lang, "waiting_other"))
+            st.info(
+                ui(
+                    lang,
+                    "waiting_other",
+                )
+            )
 
 
-live_game()
+# On your turn there is no timer and no continuous refresh.
+# The board reruns only when you actually click it.
+board_fragment()
+
+
+# Only the waiting player polls the database.
+# The polling fragment is tiny and does not redraw the board.
+game_after_board = db.get_game(
+    seat.game_id
+)
+
+if game_after_board:
+    board_after = chess.Board(
+        game_after_board["fen"]
+    )
+
+    turn_after = (
+        "white"
+        if board_after.turn == chess.WHITE
+        else "black"
+    )
+
+    waiting_for_opponent = (
+        game_after_board["status"] == "active"
+        and seat.role != turn_after
+    )
+
+    if waiting_for_opponent:
+        known_fen = game_after_board["fen"]
+
+        @st.fragment(
+            run_every="2s"
+        )
+        def opponent_poll() -> None:
+            latest = db.get_game(
+                seat.game_id
+            )
+
+            if not latest:
+                return
+
+            if (
+                latest["fen"] != known_fen
+                or latest["status"]
+                != game_after_board["status"]
+            ):
+                # Full rerun happens once, only when the opponent
+                # actually moves or the game ends.
+                st.rerun()
+
+        opponent_poll()
+
 
 st.divider()
+
 st.caption(
-    "Stadia Chess GUI v0.8.3 — smooth two-click board with fragment-only reruns; "
-    "short invitation code; automatic start after acceptance."
+    "Stadia Chess GUI v0.8.4 — fixed image board; "
+    "White and Black orientations are independent; "
+    "no continuous board refresh; two-click moves."
 )
