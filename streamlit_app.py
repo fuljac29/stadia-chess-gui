@@ -340,6 +340,7 @@ with st.expander(ui(lang, "private_return")):
 # STABLE IMAGE BOARD — NO 64 BUTTON GRID, NO CONTINUOUS PAGE RERUN
 selection_key = f"selected_square_{seat.game_id}_{seat.role}"
 click_time_key = f"last_board_click_{seat.game_id}_{seat.role}"
+board_component_key = f"stable_board_{seat.game_id}_{seat.role}"
 
 
 def apply_square_click(
@@ -427,6 +428,76 @@ def apply_square_click(
             selection_key
         ] = ""
         return False
+
+
+def handle_board_component_click() -> None:
+    """
+    Process the image-component click as a widget callback.
+
+    The callback runs BEFORE Streamlit redraws the fragment, so the new
+    selection or completed move is already in session/database state when the
+    fragment renders. This removes the extra st.rerun() that caused the board
+    to jump/float after every move.
+    """
+    raw = st.session_state.get(
+        board_component_key
+    )
+
+    if not isinstance(
+        raw,
+        dict,
+    ):
+        return
+
+    click_time = raw.get(
+        "unix_time"
+    )
+
+    if (
+        not click_time
+        or click_time
+        == st.session_state.get(
+            click_time_key
+        )
+    ):
+        return
+
+    st.session_state[
+        click_time_key
+    ] = click_time
+
+    current = db.get_game(
+        seat.game_id
+    )
+
+    if not current:
+        return
+
+    coord = click_to_square(
+        raw.get(
+            "x",
+            0,
+        ),
+        raw.get(
+            "y",
+            0,
+        ),
+        width=raw.get(
+            "width",
+            720,
+        ),
+        height=raw.get(
+            "height",
+            720,
+        ),
+        orientation=seat.role,
+    )
+
+    if coord:
+        apply_square_click(
+            coord,
+            current,
+        )
 
 
 @st.fragment
@@ -537,68 +608,17 @@ def board_fragment() -> None:
             interactive=can_move,
         )
 
-        click = streamlit_image_coordinates(
+        streamlit_image_coordinates(
             board_image,
-            key=(
-                f"stable_board_"
-                f"{seat.game_id}_"
-                f"{seat.role}"
-            ),
-            use_column_width="auto",
+            key=board_component_key,
+            width="stretch",
             cursor=(
                 "pointer"
                 if can_move
                 else "default"
             ),
+            on_click=handle_board_component_click,
         )
-
-        if click:
-            click_time = click.get(
-                "unix_time"
-            )
-
-            if (
-                click_time
-                and click_time
-                != st.session_state.get(
-                    click_time_key
-                )
-            ):
-                st.session_state[
-                    click_time_key
-                ] = click_time
-
-                coord = click_to_square(
-                    click.get("x", 0),
-                    click.get("y", 0),
-                    width=click.get(
-                        "width",
-                        720,
-                    ),
-                    height=click.get(
-                        "height",
-                        720,
-                    ),
-                    orientation=seat.role,
-                )
-
-                if coord:
-                    completed_move = (
-                        apply_square_click(
-                            coord,
-                            current,
-                        )
-                    )
-
-                    if completed_move:
-                        # One full rerun only after the move is finished,
-                        # so the page can enter the "waiting for opponent"
-                        # state. Piece selection itself never reruns the page.
-                        st.rerun()
-
-                    st.rerun(
-                        scope="fragment"
-                    )
 
     with right:
         moves = db.get_moves(
@@ -715,7 +735,7 @@ if game_after_board:
 st.divider()
 
 st.caption(
-    "Stadia Chess GUI v0.8.4 — fixed image board; "
-    "White and Black orientations are independent; "
-    "no continuous board refresh; two-click moves."
+    "Stadia Chess GUI v0.8.5 — large fitted pieces; "
+    "stable callback-driven board; White/Black orientations; "
+    "two-click moves."
 )
