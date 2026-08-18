@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from pathlib import Path
 
 import chess
-import streamlit as st
+from PIL import Image, ImageDraw, ImageFont
 
+
+BOARD_SIZE = 720
+LIGHT_SQUARE = "#F0D9B5"
+DARK_SQUARE = "#B58863"
+SELECTED = "#7C5CFC"
+TARGET = "#344054"
 
 PIECES = {
     "P": "♙", "N": "♘", "B": "♗", "R": "♖", "Q": "♕", "K": "♔",
@@ -12,20 +18,27 @@ PIECES = {
 }
 
 
-def _display_squares(orientation: str) -> list[str]:
-    if orientation == "black":
-        ranks = range(1, 9)
-        files = "hgfedcba"
-    else:
-        ranks = range(8, 0, -1)
-        files = "abcdefgh"
+def _font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    candidates = [
+        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    for candidate in candidates:
+        if Path(candidate).exists():
+            return ImageFont.truetype(candidate, size=size)
 
-    return [f"{file_}{rank}" for rank in ranks for file_ in files]
+    try:
+        return ImageFont.truetype("DejaVuSans.ttf", size=size)
+    except OSError:
+        return ImageFont.load_default()
 
 
 def legal_sources(fen: str) -> set[str]:
     board = chess.Board(fen)
-    return {chess.square_name(move.from_square) for move in board.legal_moves}
+    return {
+        chess.square_name(move.from_square)
+        for move in board.legal_moves
+    }
 
 
 def legal_targets(fen: str, source: str) -> set[str]:
@@ -41,8 +54,11 @@ def legal_targets(fen: str, source: str) -> set[str]:
     }
 
 
-def resolve_move(fen: str, source: str, destination: str) -> str | None:
-    """Resolve source→destination to a legal UCI move; queen promotion is preferred."""
+def resolve_move(
+    fen: str,
+    source: str,
+    destination: str,
+) -> str | None:
     source = (source or "").lower().strip()
     destination = (destination or "").lower().strip()
     board = chess.Board(fen)
@@ -53,6 +69,7 @@ def resolve_move(fen: str, source: str, destination: str) -> str | None:
         if chess.square_name(move.from_square) == source
         and chess.square_name(move.to_square) == destination
     ]
+
     if not candidates:
         return None
 
@@ -63,135 +80,319 @@ def resolve_move(fen: str, source: str, destination: str) -> str | None:
         chess.KNIGHT: 3,
         None: 4,
     }
-    candidates.sort(key=lambda move: promotion_order.get(move.promotion, 9))
+
+    candidates.sort(
+        key=lambda move: promotion_order.get(
+            move.promotion,
+            9,
+        )
+    )
+
     return candidates[0].uci()
 
 
-def render_board(
+def _screen_square(
+    row: int,
+    col: int,
+    orientation: str,
+) -> str:
+    if orientation == "black":
+        file_index = 7 - col
+        rank_index = row
+    else:
+        file_index = col
+        rank_index = 7 - row
+
+    return chess.square_name(
+        chess.square(
+            file_index,
+            rank_index,
+        )
+    )
+
+
+def click_to_square(
+    x: int | float,
+    y: int | float,
+    *,
+    width: int | float,
+    height: int | float,
+    orientation: str,
+) -> str | None:
+    if width <= 0 or height <= 0:
+        return None
+
+    col = int(float(x) * 8 / float(width))
+    row = int(float(y) * 8 / float(height))
+
+    if not (0 <= col <= 7 and 0 <= row <= 7):
+        return None
+
+    return _screen_square(
+        row,
+        col,
+        orientation,
+    )
+
+
+def render_board_image(
     fen: str,
     orientation: str,
     *,
-    game_key: str,
     selected_square: str = "",
     interactive: bool = True,
-    on_square_click: Callable[[str], None] | None = None,
-) -> None:
-    """Render the board with native Streamlit buttons, so clicks do not navigate the iframe."""
+    size: int = BOARD_SIZE,
+) -> Image.Image:
+    """
+    Render one rigid square image.
+
+    This avoids Streamlit's column/button layout completely, so there can be
+    no white gaps between rows, stretched cells, or different board geometry
+    between White and Black.
+    """
     board = chess.Board(fen)
-    squares = _display_squares(orientation)
     selected_square = (selected_square or "").lower().strip()
-    sources = legal_sources(fen) if interactive else set()
+
+    sources = (
+        legal_sources(fen)
+        if interactive
+        else set()
+    )
 
     if selected_square not in sources:
         selected_square = ""
 
-    targets = legal_targets(fen, selected_square) if selected_square else set()
-    safe_game_key = "".join(ch if ch.isalnum() else "_" for ch in game_key)
+    targets = (
+        legal_targets(
+            fen,
+            selected_square,
+        )
+        if selected_square
+        else set()
+    )
 
-    css_rules = [f"""
-    .st-key-chess_board_{safe_game_key} {{
-        max-width:720px;
-        margin:0 auto;
-        border:3px solid #111827;
-        border-radius:16px;
-        overflow:hidden;
-        box-shadow:0 18px 45px rgba(17,24,39,.12);
-    }}
-    .st-key-chess_board_{safe_game_key} div[data-testid="stHorizontalBlock"],
-    .st-key-chess_board_{safe_game_key} div[data-testid="stVerticalBlock"] {{
-        gap:0 !important;
-    }}
-    .st-key-chess_board_{safe_game_key} button {{
-        width:100% !important;
-        aspect-ratio:1/1 !important;
-        min-height:0 !important;
-        height:auto !important;
-        padding:0 !important;
-        margin:0 !important;
-        border:0 !important;
-        border-radius:0 !important;
-        font-family:"Segoe UI Symbol","Arial Unicode MS",sans-serif !important;
-        font-size:clamp(30px,5.6vw,64px) !important;
-        line-height:1 !important;
-        position:relative !important;
-        box-shadow:none;
-    }}
-    .st-key-chess_board_{safe_game_key} button:disabled {{
-        opacity:1 !important;
-        cursor:default !important;
-    }}
-    """]
+    image = Image.new(
+        "RGB",
+        (size, size),
+        "white",
+    )
+    draw = ImageDraw.Draw(image)
 
-    for coord in squares:
-        square = chess.parse_square(coord)
-        file_index = chess.square_file(square)
-        rank_index = chess.square_rank(square)
-        is_light = (file_index + rank_index) % 2 == 1
-        background = "#f2d9a5" if is_light else "#9b6845"
-        key_class = f".st-key-sq_{safe_game_key}_{coord}"
+    square_px = size / 8
+    piece_font = _font(
+        max(
+            24,
+            int(square_px * 0.72),
+        )
+    )
+    coord_font = _font(
+        max(
+            10,
+            int(square_px * 0.13),
+        )
+    )
 
-        css_rules.append(f"""
-        {key_class} button,
-        {key_class} button:hover,
-        {key_class} button:focus {{
-            background:{background} !important;
-            color:#111827 !important;
-        }}
-        """)
+    for row in range(8):
+        for col in range(8):
+            coord = _screen_square(
+                row,
+                col,
+                orientation,
+            )
+            square = chess.parse_square(
+                coord
+            )
 
-        if coord in sources and interactive:
-            css_rules.append(f"""
-            {key_class} button {{ cursor:pointer !important; }}
-            {key_class} button:hover {{ filter:brightness(1.07); }}
-            """)
+            file_index = chess.square_file(
+                square
+            )
+            rank_index = chess.square_rank(
+                square
+            )
 
-        if coord == selected_square:
-            css_rules.append(f"""
-            {key_class} button {{
-                box-shadow:inset 0 0 0 5px #6f4cff,
-                           inset 0 0 0 8px rgba(255,255,255,.55) !important;
-            }}
-            """)
+            light = (
+                (file_index + rank_index) % 2 == 1
+            )
 
-        if coord in targets:
-            if board.piece_at(square):
-                css_rules.append(f"""
-                {key_class} button {{
-                    box-shadow:inset 0 0 0 5px rgba(44,62,80,.55) !important;
-                }}
-                """)
-            else:
-                css_rules.append(f"""
-                {key_class} button::after {{
-                    content:"";
-                    position:absolute;
-                    width:22%;
-                    aspect-ratio:1/1;
-                    border-radius:999px;
-                    background:rgba(44,62,80,.48);
-                    pointer-events:none;
-                }}
-                """)
+            x0 = round(col * square_px)
+            y0 = round(row * square_px)
+            x1 = round((col + 1) * square_px)
+            y1 = round((row + 1) * square_px)
 
-    st.markdown("<style>" + "\n".join(css_rules) + "</style>", unsafe_allow_html=True)
+            draw.rectangle(
+                (x0, y0, x1, y1),
+                fill=(
+                    LIGHT_SQUARE
+                    if light
+                    else DARK_SQUARE
+                ),
+            )
 
-    with st.container(key=f"chess_board_{safe_game_key}", border=False):
-        for row_start in range(0, 64, 8):
-            row_squares = squares[row_start:row_start + 8]
-            cols = st.columns(8, gap=None)
+            if coord == selected_square:
+                border = max(
+                    4,
+                    int(square_px * 0.055),
+                )
+                draw.rectangle(
+                    (
+                        x0 + border // 2,
+                        y0 + border // 2,
+                        x1 - border // 2,
+                        y1 - border // 2,
+                    ),
+                    outline=SELECTED,
+                    width=border,
+                )
 
-            for col, coord in zip(cols, row_squares):
-                square = chess.parse_square(coord)
-                piece = board.piece_at(square)
-                symbol = PIECES.get(piece.symbol(), " ") if piece else " "
+            if coord in targets:
+                piece_on_target = board.piece_at(
+                    square
+                )
 
-                with col:
-                    st.button(
-                        symbol,
-                        key=f"sq_{safe_game_key}_{coord}",
-                        help=coord,
-                        disabled=not interactive,
-                        use_container_width=True,
-                        on_click=on_square_click,
-                        args=(coord,),
+                if piece_on_target:
+                    border = max(
+                        4,
+                        int(square_px * 0.055),
                     )
+                    draw.ellipse(
+                        (
+                            x0 + border,
+                            y0 + border,
+                            x1 - border,
+                            y1 - border,
+                        ),
+                        outline=TARGET,
+                        width=border,
+                    )
+                else:
+                    radius = max(
+                        6,
+                        int(square_px * 0.11),
+                    )
+                    cx = (
+                        x0 + x1
+                    ) // 2
+                    cy = (
+                        y0 + y1
+                    ) // 2
+                    draw.ellipse(
+                        (
+                            cx - radius,
+                            cy - radius,
+                            cx + radius,
+                            cy + radius,
+                        ),
+                        fill=TARGET,
+                    )
+
+            piece = board.piece_at(
+                square
+            )
+
+            if piece:
+                symbol = PIECES[
+                    piece.symbol()
+                ]
+
+                bbox = draw.textbbox(
+                    (0, 0),
+                    symbol,
+                    font=piece_font,
+                    stroke_width=1,
+                )
+
+                tw = bbox[2] - bbox[0]
+                th = bbox[3] - bbox[1]
+
+                tx = (
+                    x0
+                    + (x1 - x0 - tw) / 2
+                    - bbox[0]
+                )
+                ty = (
+                    y0
+                    + (y1 - y0 - th) / 2
+                    - bbox[1]
+                    - square_px * 0.02
+                )
+
+                if piece.color == chess.WHITE:
+                    fill = "#FFFDF7"
+                    stroke_fill = "#111827"
+                    stroke_width = max(
+                        1,
+                        int(square_px * 0.022),
+                    )
+                else:
+                    fill = "#111827"
+                    stroke_fill = "#F8FAFC"
+                    stroke_width = max(
+                        1,
+                        int(square_px * 0.012),
+                    )
+
+                draw.text(
+                    (tx, ty),
+                    symbol,
+                    font=piece_font,
+                    fill=fill,
+                    stroke_width=stroke_width,
+                    stroke_fill=stroke_fill,
+                )
+
+            # Coordinate labels are intentionally tiny and fixed inside
+            # the board image, so they cannot affect layout height.
+            file_char = coord[0]
+            rank_char = coord[1]
+
+            if row == 7:
+                label_color = (
+                    DARK_SQUARE
+                    if light
+                    else LIGHT_SQUARE
+                )
+                draw.text(
+                    (
+                        x1 - square_px * 0.16,
+                        y1 - square_px * 0.18,
+                    ),
+                    file_char,
+                    font=coord_font,
+                    fill=label_color,
+                    anchor="mm",
+                )
+
+            if col == 0:
+                label_color = (
+                    DARK_SQUARE
+                    if light
+                    else LIGHT_SQUARE
+                )
+                draw.text(
+                    (
+                        x0 + square_px * 0.08,
+                        y0 + square_px * 0.11,
+                    ),
+                    rank_char,
+                    font=coord_font,
+                    fill=label_color,
+                    anchor="mm",
+                )
+
+    # A fixed border is drawn inside the image itself.
+    border_width = max(
+        3,
+        int(size * 0.005),
+    )
+    draw.rectangle(
+        (
+            0,
+            0,
+            size - 1,
+            size - 1,
+        ),
+        outline="#111827",
+        width=border_width,
+    )
+
+    return image
