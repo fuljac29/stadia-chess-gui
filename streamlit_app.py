@@ -760,19 +760,29 @@ with right:
 
     if can_move and options:
         labels = [san for san, _ in options]
+        prompt = f"— {tr(lang, 'select_move')} —"
+
+        # IMPORTANT:
+        # No chess move is preselected. The player must explicitly
+        # choose a legal move before the MOVE button becomes active.
         chosen = st.selectbox(
             tr(lang, "select_move"),
-            labels,
+            [prompt] + labels,
+            index=0,
         )
+
         uci_by_san = {
             san: uci
             for san, uci in options
         }
 
+        move_selected = chosen != prompt
+
         if st.button(
             tr(lang, "make_move"),
             type="primary",
             use_container_width=True,
+            disabled=not move_selected,
         ):
             try:
                 db.make_move(
@@ -789,6 +799,6 @@ with right:
 
 st.divider()
 st.caption(
-    "Stadia Chess GUI v0.8 — short invitation code; "
+    "Stadia Chess GUI v0.8.1 — explicit player move selection; "
     "automatic start after acceptance; private signed player identity."
 )
