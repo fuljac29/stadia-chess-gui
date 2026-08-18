@@ -224,7 +224,13 @@ def render_html(fragment: str) -> None:
 def seat_link(game_id: str, role: str, lang: str) -> str:
     token = make_seat_token(game_id, role, APP_SECRET)
     params = urlencode({"seat": token, "lang": lang})
-    return f"{STADIA_PUBLIC_URL}/?{params}"
+
+    # Use the URL fragment (#...) for the public Stadia link.
+    # The fragment is never sent to WordPress, so redirects, caching,
+    # TranslatePress and canonical URL handling cannot strip the seat token.
+    # The WordPress iframe bridge reads the fragment and forwards seat/lang
+    # to the embedded Streamlit application as normal query parameters.
+    return f"{STADIA_PUBLIC_URL}/#{params}"
 
 
 def invitation_text(lang: str, black_link: str) -> str:
@@ -486,7 +492,7 @@ if not seat:
         st.rerun()
 
     st.info(
-        "v0.6 — permanent Stadia player URLs, direct invitations "
+        "v0.7 — permanent Stadia player URLs, direct invitations "
         "and explicit guest acceptance."
     )
     st.stop()
@@ -814,7 +820,7 @@ with right:
 st.divider()
 
 st.caption(
-    "Stadia Chess GUI v0.6 — "
+    "Stadia Chess GUI v0.7 — "
     "permanent Stadia-domain player URLs; "
     "WhatsApp/email invitation; "
     "explicit guest acceptance; "
