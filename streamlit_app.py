@@ -28,6 +28,8 @@ st.set_page_config(
 
 db.init_db()
 
+STADIA_PUBLIC_URL = "https://stadiaorg.com/stadia-premium-arena/".rstrip("/")
+
 
 def secret(name: str, default: str) -> str:
     try:
@@ -37,9 +39,6 @@ def secret(name: str, default: str) -> str:
 
 
 APP_SECRET = secret("APP_SECRET", "DEV-ONLY-CHANGE-ME")
-
-# Permanent player URLs always remain inside stadiaorg.com.
-STADIA_PUBLIC_URL = "https://stadiaorg.com/stadia-premium-arena/".rstrip("/")
 
 
 # =========================================================
@@ -55,154 +54,184 @@ TIME_LABELS = {
 
 UI = {
     "EN": {
-        "status": "Status",
-        "links": "Permanent access links",
-        "send_invitation": "Send invitation",
-        "send_whatsapp": "📱 Send via WhatsApp",
-        "send_email": "✉️ Send by email",
-        "invitation_kicker": "STADIA PRIVATE CHESS",
-        "invitation_title": "You have been invited",
-        "invitation_from": "{name} invited you to a private chess game.",
-        "your_side": "Your side",
-        "black_side": "Black",
+        "create_title": "Invite a friend",
+        "your_name": "Your name",
+        "friend_name": "Friend's name",
         "time_control": "Time control",
-        "accept_help": (
-            "Enter your name and accept the invitation. "
-            "The invitation URL you opened is your permanent player URL."
+        "create_button": "INVITE TO PLAY",
+        "join_title": "Have an invitation?",
+        "invite_code": "Invitation code",
+        "code_help": "Enter the 6-character code your friend gave you.",
+        "find_button": "FIND INVITATION",
+        "missing_names": "Enter both your name and your friend's name.",
+        "code_not_found": "Invitation code not found.",
+        "invited": "{white} invited {black} to a private chess game.",
+        "accept_question": "Is this invitation for you?",
+        "accept_button": "ACCEPT & PLAY",
+        "open_button": "OPEN GAME",
+        "cancel_button": "Not this invitation",
+        "your_code": "Invitation code",
+        "tell_friend": "{friend} opens Stadia → Premium Arena and enters this code.",
+        "waiting_friend": "Waiting for {friend} to accept the invitation.",
+        "send_invitation": "Send invitation",
+        "send_whatsapp": "📱 WhatsApp",
+        "send_email": "✉️ Email",
+        "share_message": (
+            "{white} invites you to play private chess on Stadia.\n\n"
+            "Open:\n{url}\n\n"
+            "Invitation code: {code}"
         ),
-        "accept_button": "✓ ACCEPT INVITATION & JOIN GAME",
-        "name_required": "Please enter your name.",
-        "accepted": "Invitation accepted.",
-        "player_url_ready": (
-            "Your permanent player URL is active. "
-            "Keep this page or bookmark it to return to this exact game."
-        ),
-        "your_player_link": "Your permanent player URL",
-        "waiting_host": "Waiting for White to start the game.",
-        "white_waiting": "Waiting for your friend to accept the invitation.",
-        "share_help": "Send only the Black invitation link to your friend.",
-        "friend_joined": "Your friend accepted the invitation.",
+        "email_subject": "Stadia Private Chess invitation",
+        "private_return": "Private return link",
+        "private_return_help": "Keep this only for yourself if you want to return later.",
+        "status": "Status",
+        "side": "Your side",
         "waiting_other": "Waiting for the other player.",
+        "moves": "Moves",
     },
     "IT": {
-        "status": "Stato",
-        "links": "Link di accesso permanenti",
-        "send_invitation": "Invia l'invito",
-        "send_whatsapp": "📱 Invia con WhatsApp",
-        "send_email": "✉️ Invia per e-mail",
-        "invitation_kicker": "STADIA SCACCHI PRIVATI",
-        "invitation_title": "Hai ricevuto un invito",
-        "invitation_from": "{name} ti invita a una partita privata di scacchi.",
-        "your_side": "Il tuo colore",
-        "black_side": "Nero",
+        "create_title": "Invita un amico",
+        "your_name": "Il tuo nome",
+        "friend_name": "Nome dell'amico",
         "time_control": "Cadenza",
-        "accept_help": (
-            "Inserisci il tuo nome e accetta l'invito. "
-            "L'URL dell'invito che hai aperto diventa il tuo URL permanente di giocatore."
+        "create_button": "INVITA A GIOCARE",
+        "join_title": "Hai ricevuto un invito?",
+        "invite_code": "Codice invito",
+        "code_help": "Inserisci il codice di 6 caratteri ricevuto dal tuo amico.",
+        "find_button": "TROVA L'INVITO",
+        "missing_names": "Inserisci il tuo nome e il nome dell'amico.",
+        "code_not_found": "Codice invito non trovato.",
+        "invited": "{white} ha invitato {black} a una partita privata di scacchi.",
+        "accept_question": "Questo invito è per te?",
+        "accept_button": "ACCETTA E GIOCA",
+        "open_button": "APRI LA PARTITA",
+        "cancel_button": "Non è questo invito",
+        "your_code": "Codice invito",
+        "tell_friend": "{friend} apre Stadia → Arena Premium e inserisce questo codice.",
+        "waiting_friend": "In attesa che {friend} accetti l'invito.",
+        "send_invitation": "Invia l'invito",
+        "send_whatsapp": "📱 WhatsApp",
+        "send_email": "✉️ E-mail",
+        "share_message": (
+            "{white} ti invita a giocare a scacchi privati su Stadia.\n\n"
+            "Apri:\n{url}\n\n"
+            "Codice invito: {code}"
         ),
-        "accept_button": "✓ ACCETTA L'INVITO ED ENTRA",
-        "name_required": "Inserisci il tuo nome.",
-        "accepted": "Invito accettato.",
-        "player_url_ready": (
-            "Il tuo URL permanente di giocatore è attivo. "
-            "Conserva questa pagina o aggiungila ai preferiti per tornare a questa partita."
-        ),
-        "your_player_link": "Il tuo URL permanente di giocatore",
-        "waiting_host": "In attesa che il Bianco inizi la partita.",
-        "white_waiting": "In attesa che il tuo amico accetti l'invito.",
-        "share_help": "Invia al tuo amico soltanto il link Nero.",
-        "friend_joined": "Il tuo amico ha accettato l'invito.",
+        "email_subject": "Invito a Stadia Private Chess",
+        "private_return": "Link privato per tornare",
+        "private_return_help": "Conservalo solo per te se vuoi tornare più tardi.",
+        "status": "Stato",
+        "side": "Il tuo colore",
         "waiting_other": "In attesa dell'altro giocatore.",
+        "moves": "Mosse",
     },
     "DE": {
-        "status": "Status",
-        "links": "Permanente Zugangslinks",
-        "send_invitation": "Einladung senden",
-        "send_whatsapp": "📱 Über WhatsApp senden",
-        "send_email": "✉️ Per E-Mail senden",
-        "invitation_kicker": "STADIA PRIVATSCHACH",
-        "invitation_title": "Du wurdest eingeladen",
-        "invitation_from": "{name} lädt dich zu einer privaten Schachpartie ein.",
-        "your_side": "Deine Farbe",
-        "black_side": "Schwarz",
+        "create_title": "Freund einladen",
+        "your_name": "Dein Name",
+        "friend_name": "Name des Freundes",
         "time_control": "Bedenkzeit",
-        "accept_help": (
-            "Gib deinen Namen ein und nimm die Einladung an. "
-            "Die geöffnete Einladungs-URL bleibt deine permanente Spieler-URL."
+        "create_button": "ZUM SPIEL EINLADEN",
+        "join_title": "Hast du eine Einladung?",
+        "invite_code": "Einladungscode",
+        "code_help": "Gib den 6-stelligen Code ein, den du erhalten hast.",
+        "find_button": "EINLADUNG FINDEN",
+        "missing_names": "Gib deinen Namen und den Namen deines Freundes ein.",
+        "code_not_found": "Einladungscode nicht gefunden.",
+        "invited": "{white} hat {black} zu einer privaten Schachpartie eingeladen.",
+        "accept_question": "Ist diese Einladung für dich?",
+        "accept_button": "ANNEHMEN & SPIELEN",
+        "open_button": "PARTIE ÖFFNEN",
+        "cancel_button": "Nicht diese Einladung",
+        "your_code": "Einladungscode",
+        "tell_friend": "{friend} öffnet Stadia → Premium Arena und gibt diesen Code ein.",
+        "waiting_friend": "Warte darauf, dass {friend} die Einladung annimmt.",
+        "send_invitation": "Einladung senden",
+        "send_whatsapp": "📱 WhatsApp",
+        "send_email": "✉️ E-Mail",
+        "share_message": (
+            "{white} lädt dich zu einer privaten Schachpartie auf Stadia ein.\n\n"
+            "Öffne:\n{url}\n\n"
+            "Einladungscode: {code}"
         ),
-        "accept_button": "✓ EINLADUNG ANNEHMEN & BEITRETEN",
-        "name_required": "Bitte gib deinen Namen ein.",
-        "accepted": "Einladung angenommen.",
-        "player_url_ready": (
-            "Deine permanente Spieler-URL ist aktiv. "
-            "Speichere diese Seite, um zu dieser Partie zurückzukehren."
-        ),
-        "your_player_link": "Deine permanente Spieler-URL",
-        "waiting_host": "Warte darauf, dass Weiß die Partie startet.",
-        "white_waiting": "Warte darauf, dass dein Freund die Einladung annimmt.",
-        "share_help": "Sende deinem Freund nur den schwarzen Einladungslink.",
-        "friend_joined": "Dein Freund hat die Einladung angenommen.",
+        "email_subject": "Stadia Private Chess Einladung",
+        "private_return": "Privater Rückkehr-Link",
+        "private_return_help": "Bewahre diesen Link nur für dich auf.",
+        "status": "Status",
+        "side": "Deine Farbe",
         "waiting_other": "Warte auf den anderen Spieler.",
+        "moves": "Züge",
     },
     "FR": {
-        "status": "Statut",
-        "links": "Liens d'accès permanents",
-        "send_invitation": "Envoyer l'invitation",
-        "send_whatsapp": "📱 Envoyer par WhatsApp",
-        "send_email": "✉️ Envoyer par e-mail",
-        "invitation_kicker": "STADIA ÉCHECS PRIVÉS",
-        "invitation_title": "Vous avez reçu une invitation",
-        "invitation_from": "{name} vous invite à une partie d'échecs privée.",
-        "your_side": "Votre couleur",
-        "black_side": "Noirs",
+        "create_title": "Inviter un ami",
+        "your_name": "Votre nom",
+        "friend_name": "Nom de l'ami",
         "time_control": "Cadence",
-        "accept_help": (
-            "Entrez votre nom et acceptez l'invitation. "
-            "L'URL d'invitation ouverte restera votre URL permanente de joueur."
+        "create_button": "INVITER À JOUER",
+        "join_title": "Vous avez reçu une invitation ?",
+        "invite_code": "Code d'invitation",
+        "code_help": "Entrez le code de 6 caractères reçu de votre ami.",
+        "find_button": "TROUVER L'INVITATION",
+        "missing_names": "Entrez votre nom et celui de votre ami.",
+        "code_not_found": "Code d'invitation introuvable.",
+        "invited": "{white} a invité {black} à une partie d'échecs privée.",
+        "accept_question": "Cette invitation est-elle pour vous ?",
+        "accept_button": "ACCEPTER ET JOUER",
+        "open_button": "OUVRIR LA PARTIE",
+        "cancel_button": "Ce n'est pas cette invitation",
+        "your_code": "Code d'invitation",
+        "tell_friend": "{friend} ouvre Stadia → Arène Premium et entre ce code.",
+        "waiting_friend": "En attente de l'acceptation de {friend}.",
+        "send_invitation": "Envoyer l'invitation",
+        "send_whatsapp": "📱 WhatsApp",
+        "send_email": "✉️ E-mail",
+        "share_message": (
+            "{white} vous invite à jouer aux échecs privés sur Stadia.\n\n"
+            "Ouvrez :\n{url}\n\n"
+            "Code d'invitation : {code}"
         ),
-        "accept_button": "✓ ACCEPTER L'INVITATION ET REJOINDRE",
-        "name_required": "Veuillez entrer votre nom.",
-        "accepted": "Invitation acceptée.",
-        "player_url_ready": (
-            "Votre URL permanente de joueur est active. "
-            "Conservez cette page pour revenir exactement à cette partie."
-        ),
-        "your_player_link": "Votre URL permanente de joueur",
-        "waiting_host": "En attente du démarrage de la partie par les Blancs.",
-        "white_waiting": "En attente de l'acceptation de votre ami.",
-        "share_help": "Envoyez uniquement le lien Noir à votre ami.",
-        "friend_joined": "Votre ami a accepté l'invitation.",
+        "email_subject": "Invitation Stadia Private Chess",
+        "private_return": "Lien privé de retour",
+        "private_return_help": "Gardez ce lien uniquement pour vous.",
+        "status": "Statut",
+        "side": "Votre couleur",
         "waiting_other": "En attente de l'autre joueur.",
+        "moves": "Coups",
     },
     "ES": {
-        "status": "Estado",
-        "links": "Enlaces de acceso permanentes",
-        "send_invitation": "Enviar invitación",
-        "send_whatsapp": "📱 Enviar por WhatsApp",
-        "send_email": "✉️ Enviar por correo",
-        "invitation_kicker": "STADIA AJEDREZ PRIVADO",
-        "invitation_title": "Has recibido una invitación",
-        "invitation_from": "{name} te invita a una partida privada de ajedrez.",
-        "your_side": "Tu color",
-        "black_side": "Negras",
+        "create_title": "Invitar a un amigo",
+        "your_name": "Tu nombre",
+        "friend_name": "Nombre del amigo",
         "time_control": "Ritmo",
-        "accept_help": (
-            "Introduce tu nombre y acepta la invitación. "
-            "La URL de invitación que abriste seguirá siendo tu URL permanente de jugador."
+        "create_button": "INVITAR A JUGAR",
+        "join_title": "¿Has recibido una invitación?",
+        "invite_code": "Código de invitación",
+        "code_help": "Introduce el código de 6 caracteres que recibiste.",
+        "find_button": "BUSCAR INVITACIÓN",
+        "missing_names": "Introduce tu nombre y el nombre de tu amigo.",
+        "code_not_found": "Código de invitación no encontrado.",
+        "invited": "{white} ha invitado a {black} a una partida privada de ajedrez.",
+        "accept_question": "¿Esta invitación es para ti?",
+        "accept_button": "ACEPTAR Y JUGAR",
+        "open_button": "ABRIR PARTIDA",
+        "cancel_button": "No es esta invitación",
+        "your_code": "Código de invitación",
+        "tell_friend": "{friend} abre Stadia → Arena Premium e introduce este código.",
+        "waiting_friend": "Esperando a que {friend} acepte la invitación.",
+        "send_invitation": "Enviar invitación",
+        "send_whatsapp": "📱 WhatsApp",
+        "send_email": "✉️ Correo",
+        "share_message": (
+            "{white} te invita a jugar ajedrez privado en Stadia.\n\n"
+            "Abre:\n{url}\n\n"
+            "Código de invitación: {code}"
         ),
-        "accept_button": "✓ ACEPTAR INVITACIÓN Y ENTRAR",
-        "name_required": "Introduce tu nombre.",
-        "accepted": "Invitación aceptada.",
-        "player_url_ready": (
-            "Tu URL permanente de jugador está activa. "
-            "Guarda esta página para volver exactamente a esta partida."
-        ),
-        "your_player_link": "Tu URL permanente de jugador",
-        "waiting_host": "Esperando a que las Blancas inicien la partida.",
-        "white_waiting": "Esperando a que tu amigo acepte la invitación.",
-        "share_help": "Envía únicamente el enlace de Negras a tu amigo.",
-        "friend_joined": "Tu amigo ha aceptado la invitación.",
+        "email_subject": "Invitación Stadia Private Chess",
+        "private_return": "Enlace privado de regreso",
+        "private_return_help": "Guarda este enlace solo para ti.",
+        "status": "Estado",
+        "side": "Tu color",
         "waiting_other": "Esperando al otro jugador.",
+        "moves": "Movimientos",
     },
 }
 
@@ -212,72 +241,14 @@ def ui(lang: str, key: str) -> str:
     return language.get(key, UI["EN"].get(key, key))
 
 
-# =========================================================
-# HELPERS
-# =========================================================
-
 def render_html(fragment: str) -> None:
-    """Render HTML without Markdown treating indentation as a code block."""
     st.markdown(dedent(fragment).strip(), unsafe_allow_html=True)
 
 
 def seat_link(game_id: str, role: str, lang: str) -> str:
     token = make_seat_token(game_id, role, APP_SECRET)
     params = urlencode({"seat": token, "lang": lang})
-
-    # Use the URL fragment (#...) for the public Stadia link.
-    # The fragment is never sent to WordPress, so redirects, caching,
-    # TranslatePress and canonical URL handling cannot strip the seat token.
-    # The WordPress iframe bridge reads the fragment and forwards seat/lang
-    # to the embedded Streamlit application as normal query parameters.
     return f"{STADIA_PUBLIC_URL}/#{params}"
-
-
-def invitation_text(lang: str, black_link: str) -> str:
-    messages = {
-        "EN": (
-            "I invite you to play a private chess game on Stadia.\n\n"
-            "Open this personal link to join as Black:\n"
-            f"{black_link}\n\n"
-            "See you on the board!"
-        ),
-        "IT": (
-            "Ti invito a giocare una partita privata a scacchi su Stadia.\n\n"
-            "Apri questo link personale per entrare con i Neri:\n"
-            f"{black_link}\n\n"
-            "Ci vediamo sulla scacchiera!"
-        ),
-        "DE": (
-            "Ich lade dich zu einer privaten Schachpartie auf Stadia ein.\n\n"
-            "Öffne diesen persönlichen Link, um als Schwarz beizutreten:\n"
-            f"{black_link}\n\n"
-            "Bis gleich am Schachbrett!"
-        ),
-        "FR": (
-            "Je t'invite à jouer une partie d'échecs privée sur Stadia.\n\n"
-            "Ouvre ce lien personnel pour rejoindre la partie avec les Noirs :\n"
-            f"{black_link}\n\n"
-            "À bientôt sur l'échiquier !"
-        ),
-        "ES": (
-            "Te invito a jugar una partida privada de ajedrez en Stadia.\n\n"
-            "Abre este enlace personal para entrar con Negras:\n"
-            f"{black_link}\n\n"
-            "¡Nos vemos en el tablero!"
-        ),
-    }
-    return messages.get(lang, messages["EN"])
-
-
-def invitation_subject(lang: str) -> str:
-    subjects = {
-        "EN": "Stadia Private Chess invitation",
-        "IT": "Invito a una partita privata di scacchi su Stadia",
-        "DE": "Einladung zu einer privaten Schachpartie auf Stadia",
-        "FR": "Invitation à une partie d'échecs privée sur Stadia",
-        "ES": "Invitación a una partida privada de ajedrez en Stadia",
-    }
-    return subjects.get(lang, subjects["EN"])
 
 
 # =========================================================
@@ -300,12 +271,12 @@ render_html(
         border-radius:26px;
         padding:30px;
         background:linear-gradient(135deg,#fff 0%,#faf8ff 100%);
-        margin-bottom:20px;
+        margin-bottom:22px;
     }
 
     .sv-hero h1{
         font-size:46px;
-        margin:8px 0 4px 0;
+        margin:8px 0 4px;
     }
 
     .sv-hero .gradient{
@@ -313,7 +284,7 @@ render_html(
         -webkit-background-clip:text;
         background-clip:text;
         color:transparent;
-        margin:20px 0 8px 0;
+        margin:20px 0 8px;
     }
 
     .sv-kicker{
@@ -330,23 +301,20 @@ render_html(
         line-height:1.6;
     }
 
-    .sv-invite{
+    .sv-code-card{
         border:1px solid #ddd6fe;
-        border-radius:24px;
-        padding:28px;
-        margin:18px 0 16px;
+        border-radius:22px;
+        padding:24px;
         background:linear-gradient(135deg,#fff,#faf8ff);
+        margin:14px 0;
     }
 
-    .sv-invite h2{
-        margin:8px 0 12px;
-        font-size:34px;
-    }
-
-    .sv-invite p{
-        color:#475569;
-        font-size:16px;
-        line-height:1.6;
+    .sv-code{
+        font-size:42px;
+        font-weight:950;
+        letter-spacing:.18em;
+        color:#111827;
+        margin:6px 0 8px;
     }
 
     .sv-status{
@@ -399,8 +367,7 @@ render_html(
     @media(max-width:760px){
         .sv-hero{padding:22px}
         .sv-hero h1{font-size:36px}
-        .sv-invite{padding:20px}
-        .sv-invite h2{font-size:28px}
+        .sv-code{font-size:34px}
     }
     </style>
     """
@@ -456,44 +423,138 @@ if seat_token and not seat:
 
 
 # =========================================================
-# CREATE NEW GAME
+# PUBLIC PAGE — CREATE OR ACCEPT BY SHORT CODE
 # =========================================================
 
 if not seat:
-    st.subheader(tr(lang, "new_game"))
+    st.subheader(ui(lang, "create_title"))
 
     with st.form("create_game", border=True):
-        white_name = st.text_input(tr(lang, "white_name"), value="")
-        st.caption(tr(lang, "friend_name_later"))
+        white_name = st.text_input(ui(lang, "your_name"), value="")
+        friend_name = st.text_input(ui(lang, "friend_name"), value="")
 
         time_control = st.selectbox(
-            tr(lang, "time_control"),
+            ui(lang, "time_control"),
             options=list(TIME_LABELS.keys()),
             format_func=lambda x: TIME_LABELS[x],
         )
 
         submitted = st.form_submit_button(
-            tr(lang, "create"),
+            ui(lang, "create_button"),
             type="primary",
             use_container_width=True,
         )
 
     if submitted:
-        gid = db.create_game(
-            white_name=white_name or "White",
-            black_name="Friend",
-            time_control=time_control,
+        if not white_name.strip() or not friend_name.strip():
+            st.error(ui(lang, "missing_names"))
+        else:
+            gid = db.create_game(
+                white_name=white_name.strip(),
+                black_name=friend_name.strip(),
+                time_control=time_control,
+            )
+
+            st.query_params["seat"] = make_seat_token(
+                gid,
+                "white",
+                APP_SECRET,
+            )
+            st.query_params["lang"] = lang
+            st.rerun()
+
+    st.divider()
+    st.subheader(ui(lang, "join_title"))
+
+    pending_code = str(st.session_state.get("pending_invite_code", "")).strip()
+
+    if not pending_code:
+        with st.form("find_invitation", border=True):
+            entered_code = st.text_input(
+                ui(lang, "invite_code"),
+                value="",
+                max_chars=8,
+                help=ui(lang, "code_help"),
+            )
+
+            find_invite = st.form_submit_button(
+                ui(lang, "find_button"),
+                type="primary",
+                use_container_width=True,
+            )
+
+        if find_invite:
+            normalized = db.normalize_invite_code(entered_code)
+            game = db.get_game_by_invite_code(normalized)
+
+            if not game:
+                st.error(ui(lang, "code_not_found"))
+            else:
+                st.session_state["pending_invite_code"] = normalized
+                st.rerun()
+
+    else:
+        game = db.get_game_by_invite_code(pending_code)
+
+        if not game:
+            st.session_state.pop("pending_invite_code", None)
+            st.error(ui(lang, "code_not_found"))
+            st.stop()
+
+        white_name = escape(str(game["white_name"]))
+        black_name = escape(str(game["black_name"]))
+        sentence = ui(lang, "invited").format(
+            white=white_name,
+            black=black_name,
         )
 
-        # This changes the Streamlit iframe to White's signed seat.
-        # The permanent shareable URL is generated below on stadiaorg.com.
-        st.query_params["seat"] = make_seat_token(gid, "white", APP_SECRET)
-        st.query_params["lang"] = lang
-        st.rerun()
+        render_html(
+            f"""
+            <div class="sv-code-card">
+                <div class="sv-kicker">{escape(ui(lang, "invite_code"))}</div>
+                <div class="sv-code">{escape(pending_code)}</div>
+                <p style="font-size:18px;margin:8px 0 0">{sentence}</p>
+                <p style="color:#667085">{escape(ui(lang, "accept_question"))}</p>
+            </div>
+            """
+        )
+
+        c1, c2 = st.columns([3, 1])
+
+        with c1:
+            button_label = (
+                ui(lang, "accept_button")
+                if game["status"] == "waiting"
+                else ui(lang, "open_button")
+            )
+
+            if st.button(
+                button_label,
+                type="primary",
+                use_container_width=True,
+            ):
+                if game["status"] == "waiting":
+                    game = db.accept_invite(pending_code)
+
+                st.session_state.pop("pending_invite_code", None)
+                st.query_params["seat"] = make_seat_token(
+                    game["id"],
+                    "black",
+                    APP_SECRET,
+                )
+                st.query_params["lang"] = lang
+                st.rerun()
+
+        with c2:
+            if st.button(
+                ui(lang, "cancel_button"),
+                use_container_width=True,
+            ):
+                st.session_state.pop("pending_invite_code", None)
+                st.rerun()
 
     st.info(
-        "v0.7 — permanent Stadia player URLs, direct invitations "
-        "and explicit guest acceptance."
+        "v0.8 — short invitation code: create → share code → accept → play."
     )
     st.stop()
 
@@ -509,88 +570,19 @@ if not game:
     st.stop()
 
 
-white_link = seat_link(seat.game_id, "white", lang)
-black_link = seat_link(seat.game_id, "black", lang)
-
-
-# =========================================================
-# BLACK INVITATION PAGE — BEFORE NORMAL GAME UI
-# =========================================================
-#
-# This is intentionally handled before the normal header.
-# The invited friend gets a clean invitation page:
-#   invitation -> name -> ACCEPT -> same permanent Black URL.
-#
-
-if seat.role == "black" and game["status"] == "waiting":
-    time_label = TIME_LABELS.get(
-        game.get("time_control", "rapid_15_10"),
-        str(game.get("time_control", "Rapid")),
-    )
-
-    safe_white_name = escape(str(game["white_name"]))
-    invite_sentence = ui(lang, "invitation_from").format(name=safe_white_name)
-
-    render_html(
-        f"""
-        <div class="sv-invite">
-            <div class="sv-kicker">{escape(ui(lang, "invitation_kicker"))}</div>
-            <h2>{escape(ui(lang, "invitation_title"))}</h2>
-            <p style="font-size:19px">
-                {invite_sentence}
-            </p>
-            <p>
-                <strong>{escape(ui(lang, "your_side"))}:</strong>
-                {escape(ui(lang, "black_side"))}
-            </p>
-            <p>
-                <strong>{escape(ui(lang, "time_control"))}:</strong>
-                {escape(str(time_label))}
-            </p>
-        </div>
-        """
-    )
-
-    st.info(ui(lang, "accept_help"))
-
-    with st.form("accept_invitation", border=True):
-        black_name = st.text_input(
-            tr(lang, "your_name_black"),
-            value="",
-        )
-
-        accepted = st.form_submit_button(
-            ui(lang, "accept_button"),
-            type="primary",
-            use_container_width=True,
-        )
-
-    if accepted:
-        if not black_name.strip():
-            st.error(ui(lang, "name_required"))
-            st.stop()
-
-        try:
-            db.join_black(seat.game_id, black_name.strip())
-
-            # IMPORTANT:
-            # We do not replace or remove ?seat=...
-            # The Black invitation URL remains the friend's permanent player URL.
-            st.rerun()
-
-        except ValueError as exc:
-            st.error(str(exc))
-
-    st.stop()
+# Legacy v0.7 games may still be in READY.
+# v0.8 starts new games immediately when the friend accepts.
+if game["status"] == "ready":
+    try:
+        db.start_game(seat.game_id)
+        game = db.get_game(seat.game_id)
+    except ValueError:
+        pass
 
 
 # =========================================================
 # AUTO REFRESH
 # =========================================================
-#
-# At this point Black is no longer filling the invitation form.
-# White/Black can safely refresh to see status/moves from the other player.
-#
 
 st_autorefresh(
     interval=3000,
@@ -606,7 +598,73 @@ if not game:
 
 
 # =========================================================
-# NORMAL GAME HEADER
+# WAITING HOST — SHOW ONLY SHORT CODE
+# =========================================================
+
+if game["status"] == "waiting" and seat.role == "white":
+    invite_code = str(game.get("invite_code") or "").upper()
+    friend_name = str(game["black_name"])
+
+    render_html(
+        f"""
+        <div class="sv-code-card">
+            <div class="sv-kicker">{escape(ui(lang, "your_code"))}</div>
+            <div class="sv-code">{escape(invite_code)}</div>
+            <p style="font-size:18px;margin:8px 0 0">
+                {escape(ui(lang, "tell_friend").format(friend=friend_name))}
+            </p>
+        </div>
+        """
+    )
+
+    st.warning(
+        ui(lang, "waiting_friend").format(friend=friend_name)
+    )
+
+    message = ui(lang, "share_message").format(
+        white=game["white_name"],
+        url=STADIA_PUBLIC_URL + "/",
+        code=invite_code,
+    )
+
+    whatsapp_url = "https://wa.me/?text=" + quote(message, safe="")
+    email_url = (
+        "mailto:?subject="
+        + quote(ui(lang, "email_subject"), safe="")
+        + "&body="
+        + quote(message, safe="")
+    )
+
+    st.markdown(f"##### {ui(lang, 'send_invitation')}")
+    w1, w2 = st.columns(2)
+
+    with w1:
+        st.link_button(
+            ui(lang, "send_whatsapp"),
+            whatsapp_url,
+            type="primary",
+            use_container_width=True,
+        )
+
+    with w2:
+        st.link_button(
+            ui(lang, "send_email"),
+            email_url,
+            use_container_width=True,
+        )
+
+    with st.expander(ui(lang, "private_return")):
+        st.caption(ui(lang, "private_return_help"))
+        st.code(
+            seat_link(seat.game_id, "white", lang),
+            language=None,
+        )
+
+    st.stop()
+
+
+# =========================================================
+# GAME HEADER
 # =========================================================
 
 role_label = tr(lang, seat.role)
@@ -618,7 +676,7 @@ with top1:
     st.caption(f"Game ID: {game['id'][:12].upper()}")
 
 with top2:
-    st.markdown(f"**{tr(lang, 'side')}**")
+    st.markdown(f"**{ui(lang, 'side')}**")
     render_html(
         f'<span class="sv-side">{escape(str(role_label))}</span>'
     )
@@ -631,99 +689,15 @@ with top3:
 
 
 # =========================================================
-# WHITE — PERMANENT LINKS + SHARE
+# PRIVATE RETURN LINK — COLLAPSED
 # =========================================================
 
-if seat.role == "white":
-    with st.expander(
-        ui(lang, "links"),
-        expanded=game["status"] in {"waiting", "ready"},
-    ):
-        st.markdown(f"**{tr(lang, 'your_link')}**")
-        st.code(white_link, language=None)
-
-        st.markdown(f"**{tr(lang, 'friend_link')}**")
-        st.code(black_link, language=None)
-
-        invite_message = invitation_text(lang, black_link)
-        subject = invitation_subject(lang)
-
-        whatsapp_url = (
-            "https://wa.me/?text="
-            + quote(invite_message, safe="")
-        )
-
-        email_url = (
-            "mailto:?subject="
-            + quote(subject, safe="")
-            + "&body="
-            + quote(invite_message, safe="")
-        )
-
-        st.markdown(f"##### {ui(lang, 'send_invitation')}")
-
-        share1, share2 = st.columns(2)
-
-        with share1:
-            st.link_button(
-                ui(lang, "send_whatsapp"),
-                whatsapp_url,
-                type="primary",
-                use_container_width=True,
-            )
-
-        with share2:
-            st.link_button(
-                ui(lang, "send_email"),
-                email_url,
-                use_container_width=True,
-            )
-
-        st.caption(ui(lang, "share_help"))
-        st.success(tr(lang, "return_later"))
-
-
-# =========================================================
-# WAITING — WHITE
-# =========================================================
-
-if game["status"] == "waiting":
-    if seat.role == "white":
-        st.warning(ui(lang, "white_waiting"))
-        st.caption(tr(lang, "friend_name_later"))
-    st.stop()
-
-
-# =========================================================
-# READY
-# =========================================================
-
-if game["status"] == "ready":
-    if seat.role == "white":
-        st.success(ui(lang, "friend_joined"))
-        st.success(tr(lang, "ready"))
-
-        if st.button(
-            tr(lang, "start"),
-            type="primary",
-            use_container_width=True,
-        ):
-            try:
-                db.start_game(seat.game_id)
-                st.rerun()
-            except ValueError as exc:
-                st.error(str(exc))
-
-    else:
-        st.success(ui(lang, "accepted"))
-        st.info(ui(lang, "player_url_ready"))
-
-        with st.expander(ui(lang, "your_player_link")):
-            st.code(black_link, language=None)
-
-        st.warning(ui(lang, "waiting_host"))
-
-    st.stop()
+with st.expander(ui(lang, "private_return")):
+    st.caption(ui(lang, "private_return_help"))
+    st.code(
+        seat_link(seat.game_id, seat.role, lang),
+        language=None,
+    )
 
 
 # =========================================================
@@ -759,12 +733,10 @@ with right:
         f"### {tr(lang, 'turn')}: {tr(lang, turn_role)}"
     )
 
-    st.caption(tr(lang, "return_later"))
-
     moves = db.get_moves(seat.game_id)
 
     st.markdown(
-        f"**{tr(lang, 'moves')} ({len(moves)})**"
+        f"**{ui(lang, 'moves')} ({len(moves)})**"
     )
 
     if moves:
@@ -780,16 +752,18 @@ with right:
         and seat.role == turn_role
     )
 
-    options = move_options(game["fen"]) if can_move else []
+    options = (
+        move_options(game["fen"])
+        if can_move
+        else []
+    )
 
     if can_move and options:
         labels = [san for san, _ in options]
-
         chosen = st.selectbox(
             tr(lang, "select_move"),
             labels,
         )
-
         uci_by_san = {
             san: uci
             for san, uci in options
@@ -813,16 +787,8 @@ with right:
         st.info(ui(lang, "waiting_other"))
 
 
-# =========================================================
-# FOOTER
-# =========================================================
-
 st.divider()
-
 st.caption(
-    "Stadia Chess GUI v0.7 — "
-    "permanent Stadia-domain player URLs; "
-    "WhatsApp/email invitation; "
-    "explicit guest acceptance; "
-    "server-signed White/Black identity."
+    "Stadia Chess GUI v0.8 — short invitation code; "
+    "automatic start after acceptance; private signed player identity."
 )
