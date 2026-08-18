@@ -10,7 +10,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 import chess_db as db
-from chess_board import board_html, move_options
+from chess_board import board_html
 from chess_tokens import make_seat_token, verify_seat_token
 from i18n import LANGUAGES, tr
 
@@ -87,6 +87,9 @@ UI = {
         "status": "Status",
         "side": "Your side",
         "waiting_other": "Waiting for the other player.",
+        "click_piece": "Click one of your pieces on the board.",
+        "click_destination": "Now click the destination square.",
+        "selected_piece": "Piece selected. Choose where to move it.",
         "moves": "Moves",
     },
     "IT": {
@@ -123,6 +126,9 @@ UI = {
         "status": "Stato",
         "side": "Il tuo colore",
         "waiting_other": "In attesa dell'altro giocatore.",
+        "click_piece": "Clicca uno dei tuoi pezzi sulla scacchiera.",
+        "click_destination": "Ora clicca la casella di destinazione.",
+        "selected_piece": "Pezzo selezionato. Scegli dove muoverlo.",
         "moves": "Mosse",
     },
     "DE": {
@@ -159,6 +165,9 @@ UI = {
         "status": "Status",
         "side": "Deine Farbe",
         "waiting_other": "Warte auf den anderen Spieler.",
+        "click_piece": "Klicke auf eine deiner Figuren auf dem Brett.",
+        "click_destination": "Klicke jetzt auf das Zielfeld.",
+        "selected_piece": "Figur ausgewählt. Wähle das Zielfeld.",
         "moves": "Züge",
     },
     "FR": {
@@ -195,6 +204,9 @@ UI = {
         "status": "Statut",
         "side": "Votre couleur",
         "waiting_other": "En attente de l'autre joueur.",
+        "click_piece": "Cliquez sur l'une de vos pièces sur l'échiquier.",
+        "click_destination": "Cliquez maintenant sur la case de destination.",
+        "selected_piece": "Pièce sélectionnée. Choisissez sa destination.",
         "moves": "Coups",
     },
     "ES": {
@@ -231,6 +243,9 @@ UI = {
         "status": "Estado",
         "side": "Tu color",
         "waiting_other": "Esperando al otro jugador.",
+        "click_piece": "Haz clic en una de tus piezas del tablero.",
+        "click_destination": "Ahora haz clic en la casilla de destino.",
+        "selected_piece": "Pieza seleccionada. Elige dónde moverla.",
         "moves": "Movimientos",
     },
 }
@@ -712,23 +727,69 @@ if game["status"] == "finished":
 
 
 # =========================================================
-# ACTIVE / FINISHED BOARD
+# ACTIVE / FINISHED BOARD — CLICK TO MOVE
 # =========================================================
 
 board = chess.Board(game["fen"])
 orientation = seat.role
+turn_role = "white" if board.turn == chess.WHITE else "black"
+
+can_move = (
+    game["status"] == "active"
+    and seat.role == turn_role
+)
+
+selected_square = str(
+    st.query_params.get("src", "")
+).lower().strip()
+
+requested_move = str(
+    st.query_params.get("move", "")
+).lower().strip()
+
+# A click on a legal destination sends the exact UCI move
+# back to Streamlit. The server still validates the move.
+if requested_move:
+    if can_move:
+        try:
+            db.make_move(
+                seat.game_id,
+                requested_move,
+            )
+        except ValueError as exc:
+            st.session_state["chess_move_error"] = str(exc)
+
+    if "src" in st.query_params:
+        del st.query_params["src"]
+    if "move" in st.query_params:
+        del st.query_params["move"]
+
+    st.rerun()
+
+move_error = st.session_state.pop(
+    "chess_move_error",
+    None,
+)
+
+if move_error:
+    st.error(move_error)
 
 left, right = st.columns([3, 1.15], gap="large")
 
 with left:
     st.markdown(
-        board_html(game["fen"], orientation),
+        board_html(
+            game["fen"],
+            orientation=orientation,
+            seat_token=seat_token,
+            lang=lang,
+            interactive=can_move,
+            selected_square=selected_square,
+        ),
         unsafe_allow_html=True,
     )
 
 with right:
-    turn_role = "white" if board.turn == chess.WHITE else "black"
-
     st.markdown(
         f"### {tr(lang, 'turn')}: {tr(lang, turn_role)}"
     )
@@ -747,58 +808,19 @@ with right:
     else:
         st.caption("—")
 
-    can_move = (
-        game["status"] == "active"
-        and seat.role == turn_role
-    )
-
-    options = (
-        move_options(game["fen"])
-        if can_move
-        else []
-    )
-
-    if can_move and options:
-        labels = [san for san, _ in options]
-        prompt = f"— {tr(lang, 'select_move')} —"
-
-        # IMPORTANT:
-        # No chess move is preselected. The player must explicitly
-        # choose a legal move before the MOVE button becomes active.
-        chosen = st.selectbox(
-            tr(lang, "select_move"),
-            [prompt] + labels,
-            index=0,
-        )
-
-        uci_by_san = {
-            san: uci
-            for san, uci in options
-        }
-
-        move_selected = chosen != prompt
-
-        if st.button(
-            tr(lang, "make_move"),
-            type="primary",
-            use_container_width=True,
-            disabled=not move_selected,
-        ):
-            try:
-                db.make_move(
-                    seat.game_id,
-                    uci_by_san[chosen],
-                )
-                st.rerun()
-            except ValueError as exc:
-                st.error(str(exc))
-
+    if can_move:
+        if selected_square:
+            st.success(ui(lang, "selected_piece"))
+            st.info(ui(lang, "click_destination"))
+        else:
+            st.info(ui(lang, "click_piece"))
     elif game["status"] == "active":
         st.info(ui(lang, "waiting_other"))
 
 
 st.divider()
 st.caption(
-    "Stadia Chess GUI v0.8.1 — explicit player move selection; "
+    "Stadia Chess GUI v0.8.2 — short invitation code; "
+    "click a piece, then click its destination; "
     "automatic start after acceptance; private signed player identity."
 )
