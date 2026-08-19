@@ -182,7 +182,12 @@ POLISH = {
         "invite_details": 'Private game invitation',
         "no_account": 'No account is required.',
         "share_message_v089": '{white} invited you to a private chess game on Stadia.\n\nOpen Premium Arena:\n{url}\n\nInvitation code: {code}\n\nNo account is required.',
-        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
+        "clock": 'CHESS CLOCK',
+        "white_clock": 'White',
+        "black_clock": 'Black',
+        "clock_relaxed": 'Relaxed game — no clock',
+        "wins_on_time": '{name} wins on time.',
+        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -218,7 +223,12 @@ POLISH = {
         "invite_details": 'Invito a partita privata',
         "no_account": 'Non è necessario creare un account.',
         "share_message_v089": '{white} ti invita a una partita privata di scacchi su Stadia.\n\nApri Premium Arena:\n{url}\n\nCodice invito: {code}\n\nNon è necessario creare un account.',
-        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
+        "clock": 'CRONOMETRO',
+        "white_clock": 'Bianco',
+        "black_clock": 'Nero',
+        "clock_relaxed": 'Partita Relaxed — senza cronometro',
+        "wins_on_time": '{name} vince per tempo.',
+        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -254,7 +264,12 @@ POLISH = {
         "invite_details": 'Private Partie-Einladung',
         "no_account": 'Es ist kein Konto erforderlich.',
         "share_message_v089": '{white} lädt dich zu einer privaten Schachpartie auf Stadia ein.\n\nPremium Arena öffnen:\n{url}\n\nEinladungscode: {code}\n\nEs ist kein Konto erforderlich.',
-        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
+        "clock": 'SCHACHUHR',
+        "white_clock": 'Weiß',
+        "black_clock": 'Schwarz',
+        "clock_relaxed": 'Relaxed-Partie — ohne Uhr',
+        "wins_on_time": '{name} gewinnt auf Zeit.',
+        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -290,7 +305,12 @@ POLISH = {
         "invite_details": 'Invitation à une partie privée',
         "no_account": "Aucun compte n'est nécessaire.",
         "share_message_v089": "{white} vous invite à une partie d'échecs privée sur Stadia.\n\nOuvrez Premium Arena :\n{url}\n\nCode d'invitation : {code}\n\nAucun compte n'est nécessaire.",
-        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
+        "clock": 'PENDULE',
+        "white_clock": 'Blancs',
+        "black_clock": 'Noirs',
+        "clock_relaxed": 'Partie Relaxed — sans pendule',
+        "wins_on_time": '{name} gagne au temps.',
+        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -326,7 +346,12 @@ POLISH = {
         "invite_details": 'Invitación a partida privada',
         "no_account": 'No es necesario crear una cuenta.',
         "share_message_v089": '{white} te invita a una partida privada de ajedrez en Stadia.\n\nAbre Premium Arena:\n{url}\n\nCódigo de invitación: {code}\n\nNo es necesario crear una cuenta.',
-        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
+        "clock": 'RELOJ',
+        "white_clock": 'Blancas',
+        "black_clock": 'Negras',
+        "clock_relaxed": 'Partida Relaxed — sin reloj',
+        "wins_on_time": '{name} gana por tiempo.',
+        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
     },
 }
 
@@ -634,6 +659,69 @@ h1,h2,h3{letter-spacing:-.025em}
     font-weight:900;
     color:var(--sv-ink);
     margin-top:5px;
+}
+
+
+.sv-clock-wrap{
+    margin:8px 0 14px;
+}
+.sv-clock-title{
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.12em;
+    color:var(--sv-muted);
+    margin-bottom:7px;
+}
+.sv-clock-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    min-height:88px;
+}
+.sv-clock-card{
+    border:1px solid var(--sv-line);
+    border-radius:17px;
+    padding:11px 15px;
+    background:#fff;
+    min-height:88px;
+    box-sizing:border-box;
+}
+.sv-clock-card.active{
+    border-color:#7657ff;
+    background:linear-gradient(135deg,#fff,#f5f2ff);
+    box-shadow:0 8px 22px rgba(118,87,255,.10);
+}
+.sv-clock-name{
+    font-size:14px;
+    color:var(--sv-muted);
+    font-weight:800;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.sv-clock-time{
+    font-variant-numeric:tabular-nums;
+    font-size:32px;
+    line-height:1.05;
+    font-weight:950;
+    letter-spacing:-.03em;
+    color:var(--sv-ink);
+    margin-top:5px;
+}
+.sv-clock-card.active .sv-clock-time{
+    color:#5b3ff0;
+}
+.sv-clock-relaxed{
+    border:1px solid var(--sv-line);
+    border-radius:15px;
+    background:#f8f7ff;
+    padding:12px 14px;
+    font-size:14px;
+    color:var(--sv-muted);
+    font-weight:800;
+}
+@media(max-width:760px){
+    .sv-clock-time{font-size:27px}
 }
 
 div.stButton>button,
@@ -1204,8 +1292,72 @@ with st.expander(polish(lang, "save_game_link")):
     st.code(seat_link(seat.game_id, seat.role, lang), language=None)
 
 
+def format_clock_ms(
+    value: int | None,
+) -> str:
+    if value is None:
+        return "—"
+
+    remaining = max(
+        0,
+        int(value),
+    )
+
+    total_seconds = (
+        remaining + 999
+    ) // 1000
+
+    minutes, seconds = divmod(
+        total_seconds,
+        60,
+    )
+
+    if minutes >= 60:
+        hours, minutes = divmod(
+            minutes,
+            60,
+        )
+        return (
+            f"{hours:d}:"
+            f"{minutes:02d}:"
+            f"{seconds:02d}"
+        )
+
+    return (
+        f"{minutes:02d}:"
+        f"{seconds:02d}"
+    )
+
+
 def polished_result_text(current: dict) -> str:
     result = str(current.get("result") or "").strip()
+    finish_reason = str(
+        current.get("finish_reason")
+        or ""
+    ).strip()
+
+    if finish_reason == "timeout":
+        if result == "1-0":
+            return polish(
+                lang,
+                "wins_on_time",
+            ).format(
+                name=current.get(
+                    "white_name",
+                    "White",
+                )
+            )
+
+        if result == "0-1":
+            return polish(
+                lang,
+                "wins_on_time",
+            ).format(
+                name=current.get(
+                    "black_name",
+                    "Black",
+                )
+            )
 
     if result == "1-0":
         return polish(lang, "white_wins").format(
@@ -1221,6 +1373,98 @@ def polished_result_text(current: dict) -> str:
         return polish(lang, "draw")
 
     return f"{tr(lang, 'result')}: {result or '—'}"
+
+
+@st.fragment(run_every="1s")
+def chess_clock_fragment() -> None:
+    state = db.get_clock_state(
+        seat.game_id
+    )
+
+    if not state:
+        return
+
+    if not state["enabled"]:
+        render_html(
+            f"""
+            <div class="sv-clock-wrap">
+            <div class="sv-clock-title">{escape(polish(lang, 'clock'))}</div>
+            <div class="sv-clock-relaxed">{escape(polish(lang, 'clock_relaxed'))}</div>
+            </div>
+            """
+        )
+        return
+
+    current_game = db.get_game(
+        seat.game_id
+    )
+
+    if not current_game:
+        return
+
+    white_name = str(
+        current_game["white_name"]
+    )
+    black_name = str(
+        current_game["black_name"]
+    )
+
+    white_time = format_clock_ms(
+        state["white_ms"]
+    )
+    black_time = format_clock_ms(
+        state["black_ms"]
+    )
+
+    white_class = (
+        " active"
+        if state["status"] == "active"
+        and state["active_color"] == "white"
+        else ""
+    )
+
+    black_class = (
+        " active"
+        if state["status"] == "active"
+        and state["active_color"] == "black"
+        else ""
+    )
+
+    mode = TIME_LABELS.get(
+        str(
+            current_game.get(
+                "time_control"
+            )
+            or ""
+        ),
+        str(
+            current_game.get(
+                "time_control"
+            )
+            or ""
+        ),
+    )
+
+    render_html(
+        f"""
+        <div class="sv-clock-wrap">
+        <div class="sv-clock-title">{escape(polish(lang, 'clock'))} · {escape(mode)}</div>
+        <div class="sv-clock-grid">
+        <div class="sv-clock-card{white_class}">
+        <div class="sv-clock-name">{escape(white_name)} · {escape(polish(lang, 'white_clock'))}</div>
+        <div class="sv-clock-time">{escape(white_time)}</div>
+        </div>
+        <div class="sv-clock-card{black_class}">
+        <div class="sv-clock-name">{escape(black_name)} · {escape(polish(lang, 'black_clock'))}</div>
+        <div class="sv-clock-time">{escape(black_time)}</div>
+        </div>
+        </div>
+        </div>
+        """
+    )
+
+
+chess_clock_fragment()
 
 
 # STADIA CHESS BOARD v0.8.7 — BROWSER-NATIVE, FIXED, NO FONT DEPENDENCY
