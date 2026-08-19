@@ -7,6 +7,9 @@ import hashlib
 import hmac
 import secrets
 import time
+import re
+import urllib.error
+import urllib.request
 from pathlib import Path
 from html import escape
 from textwrap import dedent
@@ -31,6 +34,8 @@ st.set_page_config(
 db.init_db()
 
 STADIA_PUBLIC_URL = "https://stadiaorg.com/stadia-premium-arena/".rstrip("/")
+SV_ACCESS_URL = "https://stadiaorg.com/wp-json/stadia-chess/v1/access"
+SV_FINISH_URL = "https://stadiaorg.com/wp-json/stadia-chess/v1/finish"
 
 # Browser-native chess board.
 # It uses its own fixed-size iframe and handles piece selection locally,
@@ -202,7 +207,19 @@ POLISH = {
         "checkout_5": 'CONTINUE FOR CHF 5',
         "checkout_9": 'CONTINUE FOR CHF 9',
         "checkout_unavailable": 'Premium checkout is not configured yet.',
-        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
+        "free_status": 'YOUR FIRST GAME IS FREE',
+        "free_status_text": 'Create one private game with a friend. After it finishes, Premium is required to create more games.',
+        "premium_active_label": 'PREMIUM ACTIVE',
+        "premium_active_text": 'Unlimited private games until {date}. Invited friends continue to play free.',
+        "premium_locked": 'YOUR FREE GAME IS COMPLETE',
+        "premium_locked_text": 'To create another game, activate Premium Arena.',
+        "access_unavailable": 'Premium access service is temporarily unavailable. Invitations still work, but creating a new game is paused.',
+        "identity_missing": 'Player identity is missing. Open Premium Arena from stadiaorg.com.',
+        "same_player": 'This invitation is using the same browser identity as the creator. For a two-player test, open the invitation in another browser or a separate private/normal browser session.',
+        "existing_free_game": 'You already have a free game in progress.',
+        "open_existing": 'OPEN MY CURRENT GAME',
+        "premium_play_again": 'PLAY ANOTHER GAME',
+        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -252,7 +269,19 @@ POLISH = {
         "checkout_5": 'CONTINUA PER CHF 5',
         "checkout_9": 'CONTINUA PER CHF 9',
         "checkout_unavailable": 'Il checkout Premium non è ancora configurato.',
-        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
+        "free_status": 'LA TUA PRIMA PARTITA È GRATIS',
+        "free_status_text": 'Crea una partita privata con un amico. Quando termina, per creare altre partite serve Premium.',
+        "premium_active_label": 'PREMIUM ATTIVO',
+        "premium_active_text": 'Partite private illimitate fino al {date}. Gli amici invitati continuano a giocare gratis.',
+        "premium_locked": 'LA PARTITA GRATUITA È TERMINATA',
+        "premium_locked_text": "Per creare un'altra partita, attiva Premium Arena.",
+        "access_unavailable": 'Il servizio Premium è temporaneamente non disponibile. Gli inviti funzionano ancora, ma la creazione di nuove partite è sospesa.',
+        "identity_missing": 'Identità giocatore mancante. Apri Premium Arena da stadiaorg.com.',
+        "same_player": "Questo invito usa la stessa identità browser del creatore. Per il test a due giocatori, apri l'invito in un altro browser oppure in una sessione normale/privata separata.",
+        "existing_free_game": 'Hai già una partita gratuita in corso.',
+        "open_existing": 'APRI LA PARTITA IN CORSO',
+        "premium_play_again": "GIOCA UN'ALTRA PARTITA",
+        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -302,7 +331,19 @@ POLISH = {
         "checkout_5": 'WEITERSPIELEN FÜR CHF 5',
         "checkout_9": 'WEITERSPIELEN FÜR CHF 9',
         "checkout_unavailable": 'Premium-Checkout ist noch nicht konfiguriert.',
-        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
+        "free_status": 'DEINE ERSTE PARTIE IST KOSTENLOS',
+        "free_status_text": 'Erstelle eine private Partie mit einem Freund. Danach ist Premium nötig, um weitere Partien zu erstellen.',
+        "premium_active_label": 'PREMIUM AKTIV',
+        "premium_active_text": 'Unbegrenzte private Partien bis {date}. Eingeladene Freunde spielen weiterhin kostenlos.',
+        "premium_locked": 'DEINE KOSTENLOSE PARTIE IST BEENDET',
+        "premium_locked_text": 'Aktiviere Premium Arena, um eine weitere Partie zu erstellen.',
+        "access_unavailable": 'Der Premium-Zugriff ist vorübergehend nicht verfügbar. Einladungen funktionieren weiter, neue Partien sind kurz pausiert.',
+        "identity_missing": 'Spieleridentität fehlt. Öffne Premium Arena über stadiaorg.com.',
+        "same_player": 'Diese Einladung verwendet dieselbe Browser-Identität wie der Ersteller. Öffne sie für einen Zwei-Spieler-Test in einem anderen Browser oder einer getrennten privaten/normalen Sitzung.',
+        "existing_free_game": 'Du hast bereits eine kostenlose Partie laufen.',
+        "open_existing": 'MEINE AKTUELLE PARTIE ÖFFNEN',
+        "premium_play_again": 'NOCH EINE PARTIE',
+        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -352,7 +393,19 @@ POLISH = {
         "checkout_5": 'CONTINUER POUR CHF 5',
         "checkout_9": 'CONTINUER POUR CHF 9',
         "checkout_unavailable": "Le paiement Premium n'est pas encore configuré.",
-        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
+        "free_status": 'VOTRE PREMIÈRE PARTIE EST GRATUITE',
+        "free_status_text": "Créez une partie privée avec un ami. Une fois terminée, Premium est nécessaire pour créer d'autres parties.",
+        "premium_active_label": 'PREMIUM ACTIF',
+        "premium_active_text": "Parties privées illimitées jusqu'au {date}. Les amis invités continuent à jouer gratuitement.",
+        "premium_locked": 'VOTRE PARTIE GRATUITE EST TERMINÉE',
+        "premium_locked_text": 'Activez Premium Arena pour créer une autre partie.',
+        "access_unavailable": 'Le service Premium est temporairement indisponible. Les invitations fonctionnent encore, mais la création de nouvelles parties est suspendue.',
+        "identity_missing": 'Identité du joueur manquante. Ouvrez Premium Arena depuis stadiaorg.com.',
+        "same_player": 'Cette invitation utilise la même identité de navigateur que le créateur. Pour un test à deux joueurs, ouvrez-la dans un autre navigateur ou une session privée/normale séparée.',
+        "existing_free_game": 'Vous avez déjà une partie gratuite en cours.',
+        "open_existing": 'OUVRIR MA PARTIE EN COURS',
+        "premium_play_again": 'JOUER UNE AUTRE PARTIE',
+        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -402,7 +455,19 @@ POLISH = {
         "checkout_5": 'CONTINUAR POR CHF 5',
         "checkout_9": 'CONTINUAR POR CHF 9',
         "checkout_unavailable": 'El checkout Premium aún no está configurado.',
-        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
+        "free_status": 'TU PRIMERA PARTIDA ES GRATIS',
+        "free_status_text": 'Crea una partida privada con un amigo. Al terminar, necesitarás Premium para crear más partidas.',
+        "premium_active_label": 'PREMIUM ACTIVO',
+        "premium_active_text": 'Partidas privadas ilimitadas hasta {date}. Los amigos invitados siguen jugando gratis.',
+        "premium_locked": 'TU PARTIDA GRATUITA HA TERMINADO',
+        "premium_locked_text": 'Activa Premium Arena para crear otra partida.',
+        "access_unavailable": 'El servicio Premium no está disponible temporalmente. Las invitaciones siguen funcionando, pero crear nuevas partidas está pausado.',
+        "identity_missing": 'Falta la identidad del jugador. Abre Premium Arena desde stadiaorg.com.',
+        "same_player": 'Esta invitación usa la misma identidad de navegador que el creador. Para una prueba con dos jugadores, ábrela en otro navegador o en una sesión privada/normal separada.',
+        "existing_free_game": 'Ya tienes una partida gratuita en curso.',
+        "open_existing": 'ABRIR MI PARTIDA ACTUAL',
+        "premium_play_again": 'JUGAR OTRA PARTIDA',
+        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
     },
 }
 
@@ -808,6 +873,7 @@ h1,h2,h3{letter-spacing:-.025em}
     .sv-clock-time{font-size:27px}
 }
 
+.sv-access-card{border:1px solid var(--sv-line);border-radius:18px;padding:15px 17px;background:#fff;margin:8px 0 15px}.sv-access-card.premium{border-color:#cfc5ff;background:linear-gradient(135deg,#fff,#f6f3ff)}.sv-access-card.locked{border-color:#f1d8a8;background:#fffaf0}.sv-access-label{font-size:11px;font-weight:900;letter-spacing:.12em;color:#5b3ff0}.sv-access-text{font-size:14px;line-height:1.55;color:var(--sv-muted);margin-top:5px}
 div.stButton>button,
 div[data-testid="stFormSubmitButton"]>button{
     min-height:54px;
@@ -890,11 +956,133 @@ with st.sidebar:
         st.query_params["lang"] = lang
         st.rerun()
 
+def valid_player_id(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9_-]{20,80}", str(value or "").strip()))
+
+
+def get_access_state(player_id_value: str) -> dict | None:
+    if not valid_player_id(player_id_value):
+        return None
+    url = SV_ACCESS_URL + "?" + urlencode({"player_id": player_id_value})
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def signed_envelope(payload: dict) -> tuple[str, str]:
+    payload = dict(payload)
+    payload["exp"] = int(time.time()) + 15 * 60
+    payload["jti"] = secrets.token_urlsafe(18)
+    raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    payload_b64 = base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+    signature = hmac.new(SV_CHESS_CHECKOUT_SECRET.encode("utf-8"), payload_b64.encode("ascii"), hashlib.sha256).hexdigest()
+    return payload_b64, signature
+
+
+def sync_finished_game(current: dict) -> bool:
+    if not SV_CHESS_CHECKOUT_SECRET or current.get("status") != "finished":
+        return False
+    white_player_id = str(current.get("white_player_id") or "").strip()
+    black_player_id = str(current.get("black_player_id") or "").strip()
+    if not valid_player_id(white_player_id) or not valid_player_id(black_player_id):
+        return False
+    sync_key = "sv_finish_synced_" + str(current.get("id") or "")
+    if st.session_state.get(sync_key):
+        return True
+    p, sig = signed_envelope({"game_id": str(current["id"]), "result": str(current["result"]), "white_player_id": white_player_id, "black_player_id": black_player_id})
+    body = json.dumps({"p": p, "sig": sig}).encode("utf-8")
+    req = urllib.request.Request(SV_FINISH_URL, data=body, headers={"Content-Type":"application/json","User-Agent":"StadiaChess/0.9.2"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=6) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, json.JSONDecodeError):
+        return False
+    ok = bool(isinstance(data, dict) and data.get("ok"))
+    if ok:
+        st.session_state[sync_key] = True
+    return ok
+
+
+def access_date_text(state: dict) -> str:
+    raw = str(state.get("premium_until") or "")
+    if not raw:
+        return ""
+    try:
+        y,m,d = raw.split("T",1)[0].split("-")
+        return f"{d}.{m}.{y}"
+    except Exception:
+        return raw
+
+
+def signed_checkout_url(
+    game_id: str,
+    role: str,
+    offer: str,
+    player_id_value: str,
+) -> str:
+    """
+    Create a 15-minute, one-time signed checkout offer for WordPress.
+    The secret itself never appears in the URL.
+    """
+    if (
+        not SV_CHESS_CHECKOUT_SECRET
+        or not valid_player_id(player_id_value)
+        or not re.fullmatch(r"[a-f0-9]{32}", str(game_id or ""))
+    ):
+        return ""
+
+    payload = {
+        "game_id": str(game_id),
+        "role": str(role),
+        "offer": str(offer),
+        "player_id": str(player_id_value),
+        "exp": int(time.time()) + 15 * 60,
+        "jti": secrets.token_urlsafe(18),
+    }
+
+    raw = json.dumps(
+        payload,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+
+    payload_b64 = (
+        base64.urlsafe_b64encode(raw)
+        .rstrip(b"=")
+        .decode("ascii")
+    )
+
+    signature = hmac.new(
+        SV_CHESS_CHECKOUT_SECRET.encode("utf-8"),
+        payload_b64.encode("ascii"),
+        hashlib.sha256,
+    ).hexdigest()
+
+    return (
+        f"{STADIA_PUBLIC_URL}/?"
+        + urlencode(
+            {
+                "sv_chess_pay": "1",
+                "p": payload_b64,
+                "sig": signature,
+            }
+        )
+    )
+
+
+
 seat_token = str(st.query_params.get("seat", "")).strip()
 seat = verify_seat_token(seat_token, APP_SECRET) if seat_token else None
 if seat_token and not seat:
     st.error(tr(lang, "invalid_link"))
     st.stop()
+
+player_id = str(st.query_params.get("player", "")).strip()
+if not valid_player_id(player_id):
+    player_id = ""
 
 if seat:
     render_html(f"""
@@ -1057,29 +1245,18 @@ if not seat:
                 type="primary",
                 use_container_width=True,
             ):
-                if found_game["status"] in {
-                    "waiting",
-                    "ready",
-                }:
-                    found_game = db.accept_invite(
-                        pending_code
-                    )
-
-                st.session_state.pop(
-                    "pending_invite_code",
-                    None,
-                )
-
-                st.query_params["seat"] = (
-                    make_seat_token(
-                        found_game["id"],
-                        "black",
-                        APP_SECRET,
-                    )
-                )
-
-                st.query_params["lang"] = lang
-                st.rerun()
+                if not player_id:
+                    st.error(polish(lang, "identity_missing"))
+                elif (found_game["status"] in {"waiting", "ready"} and str(found_game.get("white_player_id") or "").strip() == player_id):
+                    st.error(polish(lang, "same_player"))
+                else:
+                    if found_game["status"] in {"waiting", "ready"}:
+                        found_game = db.accept_invite(pending_code, black_player_id=player_id)
+                    st.session_state.pop("pending_invite_code", None)
+                    st.query_params["seat"] = make_seat_token(found_game["id"], "black", APP_SECRET)
+                    st.query_params["lang"] = lang
+                    st.query_params["player"] = player_id
+                    st.rerun()
 
         with c2:
             if st.button(
@@ -1106,93 +1283,76 @@ if not seat:
 
     st.divider()
 
-    st.subheader(
-        ui(
-            lang,
-            "create_title",
-        )
-    )
+    st.subheader(ui(lang, "create_title"))
 
-    render_html(
-        f'<p class="sv-section-intro">'
-        f'{escape(polish(lang, "create_hint"))}'
-        f'</p>'
-    )
+    access_state = get_access_state(player_id) if player_id else None
 
-    with st.form(
-        "create_game",
-        border=True,
+    # If the player closed the page immediately after a finished game,
+    # recover that result here and register the free-game usage before
+    # deciding whether a new game may be created.
+    if (
+        player_id
+        and access_state
+        and access_state.get("free_available")
     ):
-        white_name = st.text_input(
-            ui(
-                lang,
-                "your_name",
-            )
+        finished_game = db.get_latest_finished_game_by_player_id(
+            player_id
         )
+        if finished_game and sync_finished_game(finished_game):
+            access_state = get_access_state(player_id)
 
-        friend_name = st.text_input(
-            ui(
-                lang,
-                "friend_name",
-            )
-        )
+    can_create = False
 
-        time_control = st.selectbox(
-            ui(
-                lang,
-                "time_control",
-            ),
-            options=list(
-                TIME_LABELS.keys()
-            ),
-            format_func=lambda x:
-                TIME_LABELS[x],
-        )
-
-        submitted = st.form_submit_button(
-            ui(
-                lang,
-                "create_button",
-            ),
-            type="primary",
-            use_container_width=True,
-        )
-
-    if submitted:
-        if (
-            not white_name.strip()
-            or not friend_name.strip()
-        ):
-            st.error(
-                ui(
-                    lang,
-                    "missing_names",
-                )
-            )
+    if not player_id:
+        st.error(polish(lang, "identity_missing"))
+    elif access_state is None:
+        st.warning(polish(lang, "access_unavailable"))
+    elif access_state.get("premium_active"):
+        premium_date = access_date_text(access_state)
+        render_html(f"""<div class="sv-access-card premium"><div class="sv-access-label">{escape(polish(lang, 'premium_active_label'))}</div><div class="sv-access-text">{escape(polish(lang, 'premium_active_text').format(date=premium_date))}</div></div>""")
+        can_create = True
+    elif access_state.get("free_available"):
+        render_html(f"""<div class="sv-access-card"><div class="sv-access-label">{escape(polish(lang, 'free_status'))}</div><div class="sv-access-text">{escape(polish(lang, 'free_status_text'))}</div></div>""")
+        open_game = db.get_open_game_by_white_player_id(player_id)
+        if open_game:
+            st.info(polish(lang, "existing_free_game"))
+            if st.button(polish(lang, "open_existing"), type="primary", use_container_width=True):
+                st.query_params["seat"] = make_seat_token(open_game["id"], "white", APP_SECRET)
+                st.query_params["lang"] = lang
+                st.query_params["player"] = player_id
+                st.rerun()
         else:
-            gid = db.create_game(
-                white_name=white_name.strip(),
-                black_name=friend_name.strip(),
-                time_control=time_control,
-            )
+            can_create = True
+    else:
+        render_html(f"""<div class="sv-access-card locked"><div class="sv-access-label">{escape(polish(lang, 'premium_locked'))}</div><div class="sv-access-text">{escape(polish(lang, 'premium_locked_text'))}</div></div>""")
+        offer = "winner" if (not access_state.get("paid_once") and access_state.get("first_offer") == "winner") else "standard"
+        is_winner_offer = offer == "winner"
+        offer_price = "CHF 5" if is_winner_offer else "CHF 9"
+        render_html(f"""<div class="sv-premium-offer"><div class="sv-premium-kicker">{escape(polish(lang, 'premium_title'))}</div><div class="sv-premium-price">{escape(polish(lang, 'winner_offer') if is_winner_offer else polish(lang, 'standard_offer'))} · {escape(offer_price)}</div><div class="sv-premium-note">{escape(polish(lang, 'winner_note') if is_winner_offer else polish(lang, 'standard_note'))}</div><div class="sv-premium-period">{escape(polish(lang, 'premium_period'))}</div></div>""")
+        checkout_url = signed_checkout_url(str(access_state.get("free_game_id") or ""), str(access_state.get("first_role") or "white"), offer, player_id)
+        if checkout_url:
+            st.link_button(polish(lang, "checkout_5") if is_winner_offer else polish(lang, "checkout_9"), checkout_url, type="primary", use_container_width=True)
+        else:
+            st.error(polish(lang, "checkout_unavailable"))
 
-            st.query_params["seat"] = (
-                make_seat_token(
-                    gid,
-                    "white",
-                    APP_SECRET,
-                )
-            )
+    if can_create:
+        render_html(f'<p class="sv-section-intro">{escape(polish(lang, "create_hint"))}</p>')
+        with st.form("create_game", border=True):
+            white_name = st.text_input(ui(lang, "your_name"))
+            friend_name = st.text_input(ui(lang, "friend_name"))
+            time_control = st.selectbox(ui(lang, "time_control"), options=list(TIME_LABELS.keys()), format_func=lambda x: TIME_LABELS[x])
+            submitted = st.form_submit_button(ui(lang, "create_button"), type="primary", use_container_width=True)
+        if submitted:
+            if not white_name.strip() or not friend_name.strip():
+                st.error(ui(lang, "missing_names"))
+            else:
+                gid = db.create_game(white_name=white_name.strip(), black_name=friend_name.strip(), time_control=time_control, white_player_id=player_id)
+                st.query_params["seat"] = make_seat_token(gid, "white", APP_SECRET)
+                st.query_params["lang"] = lang
+                st.query_params["player"] = player_id
+                st.rerun()
 
-            st.query_params["lang"] = lang
-            st.rerun()
-
-    st.caption(
-        polish(
-            lang,
-            "footer",
-        )
-    )
+    st.caption(polish(lang, "footer"))
     st.stop()
 
 
@@ -1404,56 +1564,6 @@ def player_offer(
     return "standard"
 
 
-def signed_checkout_url(
-    game_id: str,
-    role: str,
-    offer: str,
-) -> str:
-    """
-    Create a 15-minute, one-time signed checkout offer for WordPress.
-    The secret itself never appears in the URL.
-    """
-    if not SV_CHESS_CHECKOUT_SECRET:
-        return ""
-
-    payload = {
-        "game_id": str(game_id),
-        "role": str(role),
-        "offer": str(offer),
-        "exp": int(time.time()) + 15 * 60,
-        "jti": secrets.token_urlsafe(18),
-    }
-
-    raw = json.dumps(
-        payload,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
-
-    payload_b64 = (
-        base64.urlsafe_b64encode(raw)
-        .rstrip(b"=")
-        .decode("ascii")
-    )
-
-    signature = hmac.new(
-        SV_CHESS_CHECKOUT_SECRET.encode("utf-8"),
-        payload_b64.encode("ascii"),
-        hashlib.sha256,
-    ).hexdigest()
-
-    return (
-        f"{STADIA_PUBLIC_URL}/?"
-        + urlencode(
-            {
-                "sv_chess_pay": "1",
-                "p": payload_b64,
-                "sig": signature,
-            }
-        )
-    )
-
-
 def start_fresh_game() -> None:
     """
     Leave the current signed seat and return to a clean Premium Arena lobby.
@@ -1477,6 +1587,8 @@ def start_fresh_game() -> None:
 
     st.query_params.clear()
     st.query_params["lang"] = lang_value
+    if player_id:
+        st.query_params["player"] = player_id
     st.rerun()
 
 
@@ -1819,10 +1931,26 @@ def live_board_fragment() -> None:
             </div>
             """)
 
-            offer = player_offer(
-                current,
-                seat.role,
-            )
+            sync_finished_game(current)
+            access_state = get_access_state(player_id) if player_id else None
+
+            if access_state and access_state.get("free_available"):
+                st.warning(polish(lang, "access_unavailable"))
+                return
+
+            if access_state and access_state.get("premium_active"):
+                premium_date = access_date_text(access_state)
+                render_html(f"""<div class="sv-access-card premium"><div class="sv-access-label">{escape(polish(lang, 'premium_active_label'))}</div><div class="sv-access-text">{escape(polish(lang, 'premium_active_text').format(date=premium_date))}</div></div>""")
+                if st.button(polish(lang, "premium_play_again"), type="primary", use_container_width=True, key=f"premium_new_game_{seat.game_id}_{seat.role}"):
+                    start_fresh_game()
+                st.link_button(polish(lang, "back_stadia"), "https://stadiaorg.com/", use_container_width=True)
+                return
+
+            if access_state is None:
+                st.warning(polish(lang, "access_unavailable"))
+                return
+
+            offer = "winner" if (not access_state.get("paid_once") and access_state.get("first_offer") == "winner") else "standard"
 
             is_winner_offer = (
                 offer == "winner"
@@ -1858,9 +1986,10 @@ def live_board_fragment() -> None:
             )
 
             checkout_url = signed_checkout_url(
-                seat.game_id,
-                seat.role,
+                str(access_state.get("free_game_id") or current["id"]),
+                str(access_state.get("first_role") or seat.role),
                 offer,
+                player_id,
             )
 
             if checkout_url:
