@@ -182,7 +182,7 @@ POLISH = {
         "invite_details": 'Private game invitation',
         "no_account": 'No account is required.',
         "share_message_v089": '{white} invited you to a private chess game on Stadia.\n\nOpen Premium Arena:\n{url}\n\nInvitation code: {code}\n\nNo account is required.',
-        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
+        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -218,7 +218,7 @@ POLISH = {
         "invite_details": 'Invito a partita privata',
         "no_account": 'Non è necessario creare un account.',
         "share_message_v089": '{white} ti invita a una partita privata di scacchi su Stadia.\n\nApri Premium Arena:\n{url}\n\nCodice invito: {code}\n\nNon è necessario creare un account.',
-        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
+        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -254,7 +254,7 @@ POLISH = {
         "invite_details": 'Private Partie-Einladung',
         "no_account": 'Es ist kein Konto erforderlich.',
         "share_message_v089": '{white} lädt dich zu einer privaten Schachpartie auf Stadia ein.\n\nPremium Arena öffnen:\n{url}\n\nEinladungscode: {code}\n\nEs ist kein Konto erforderlich.',
-        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
+        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -290,7 +290,7 @@ POLISH = {
         "invite_details": 'Invitation à une partie privée',
         "no_account": "Aucun compte n'est nécessaire.",
         "share_message_v089": "{white} vous invite à une partie d'échecs privée sur Stadia.\n\nOuvrez Premium Arena :\n{url}\n\nCode d'invitation : {code}\n\nAucun compte n'est nécessaire.",
-        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
+        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -326,7 +326,7 @@ POLISH = {
         "invite_details": 'Invitación a partida privada',
         "no_account": 'No es necesario crear una cuenta.',
         "share_message_v089": '{white} te invita a una partida privada de ajedrez en Stadia.\n\nAbre Premium Arena:\n{url}\n\nCódigo de invitación: {code}\n\nNo es necesario crear una cuenta.',
-        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
+        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
     },
 }
 
@@ -343,7 +343,11 @@ def ui(lang: str, key: str) -> str:
 
 
 def render_html(fragment: str) -> None:
-    st.markdown(dedent(fragment).strip(), unsafe_allow_html=True)
+    cleaned = "\n".join(
+        line.strip()
+        for line in dedent(fragment).strip().splitlines()
+    )
+    st.markdown(cleaned, unsafe_allow_html=True)
 
 
 def copy_button(
@@ -704,102 +708,285 @@ else:
     """)
 
 
-# PUBLIC PAGE — CREATE OR ACCEPT BY SHORT CODE
+# PUBLIC PAGE — JOIN FIRST, CREATE SECOND
+# The invited player should never re-enter names.
 if not seat:
-    st.subheader(ui(lang, "create_title"))
-    render_html(f'<p class="sv-section-intro">{escape(polish(lang, "create_hint"))}</p>')
-    with st.form("create_game", border=True):
-        white_name = st.text_input(ui(lang, "your_name"))
-        friend_name = st.text_input(ui(lang, "friend_name"))
-        time_control = st.selectbox(
-            ui(lang, "time_control"),
-            options=list(TIME_LABELS.keys()),
-            format_func=lambda x: TIME_LABELS[x],
+    st.subheader(ui(lang, "join_title"))
+    render_html(
+        f'<p class="sv-section-intro">'
+        f'{escape(polish(lang, "join_hint"))}'
+        f'</p>'
+    )
+
+    pending_code = str(
+        st.session_state.get(
+            "pending_invite_code",
+            "",
         )
-        submitted = st.form_submit_button(ui(lang, "create_button"), type="primary", use_container_width=True)
+    ).strip()
+
+    if not pending_code:
+        with st.form(
+            "find_invitation",
+            border=True,
+        ):
+            entered_code = st.text_input(
+                ui(lang, "invite_code"),
+                max_chars=8,
+                help=ui(lang, "code_help"),
+            )
+
+            find_invite = st.form_submit_button(
+                ui(lang, "find_button"),
+                type="primary",
+                use_container_width=True,
+            )
+
+        if find_invite:
+            normalized = db.normalize_invite_code(
+                entered_code
+            )
+
+            found_game = db.get_game_by_invite_code(
+                normalized
+            )
+
+            if not found_game:
+                st.error(
+                    ui(
+                        lang,
+                        "code_not_found",
+                    )
+                )
+            else:
+                st.session_state[
+                    "pending_invite_code"
+                ] = normalized
+                st.rerun()
+
+    else:
+        found_game = db.get_game_by_invite_code(
+            pending_code
+        )
+
+        if not found_game:
+            st.session_state.pop(
+                "pending_invite_code",
+                None,
+            )
+            st.error(
+                ui(
+                    lang,
+                    "code_not_found",
+                )
+            )
+            st.stop()
+
+        sentence = ui(
+            lang,
+            "invited",
+        ).format(
+            white=escape(
+                str(
+                    found_game["white_name"]
+                )
+            ),
+            black=escape(
+                str(
+                    found_game["black_name"]
+                )
+            ),
+        )
+
+        time_label = TIME_LABELS.get(
+            str(
+                found_game.get(
+                    "time_control"
+                )
+                or ""
+            ),
+            str(
+                found_game.get(
+                    "time_control"
+                )
+                or "—"
+            ),
+        )
+
+        render_html(
+            f"""
+            <div class="sv-code-card">
+            <div class="sv-kicker">{escape(polish(lang, 'invite_details'))}</div>
+            <div class="sv-invite-title">{sentence}</div>
+            <p class="sv-invite-sub">{escape(polish(lang, 'no_account'))}</p>
+            <div class="sv-code">{escape(pending_code)}</div>
+            <div class="sv-invite-meta">
+            <span class="sv-meta-pill">{escape(polish(lang, 'you_will_play'))}: {escape(str(tr(lang, 'black')))}</span>
+            <span class="sv-meta-pill">{escape(ui(lang, 'time_control'))}: {escape(time_label)}</span>
+            </div>
+            <p class="sv-code-note">{escape(ui(lang, 'accept_question'))}</p>
+            </div>
+            """
+        )
+
+        c1, c2 = st.columns(
+            [3, 1]
+        )
+
+        with c1:
+            label = (
+                ui(
+                    lang,
+                    "accept_button",
+                )
+                if found_game["status"] == "waiting"
+                else ui(
+                    lang,
+                    "open_button",
+                )
+            )
+
+            if st.button(
+                label,
+                type="primary",
+                use_container_width=True,
+            ):
+                if found_game["status"] in {
+                    "waiting",
+                    "ready",
+                }:
+                    found_game = db.accept_invite(
+                        pending_code
+                    )
+
+                st.session_state.pop(
+                    "pending_invite_code",
+                    None,
+                )
+
+                st.query_params["seat"] = (
+                    make_seat_token(
+                        found_game["id"],
+                        "black",
+                        APP_SECRET,
+                    )
+                )
+
+                st.query_params["lang"] = lang
+                st.rerun()
+
+        with c2:
+            if st.button(
+                ui(
+                    lang,
+                    "cancel_button",
+                ),
+                use_container_width=True,
+            ):
+                st.session_state.pop(
+                    "pending_invite_code",
+                    None,
+                )
+                st.rerun()
+
+        # Once a valid invitation is found, do not show the create-game form.
+        st.caption(
+            polish(
+                lang,
+                "footer",
+            )
+        )
+        st.stop()
+
+    st.divider()
+
+    st.subheader(
+        ui(
+            lang,
+            "create_title",
+        )
+    )
+
+    render_html(
+        f'<p class="sv-section-intro">'
+        f'{escape(polish(lang, "create_hint"))}'
+        f'</p>'
+    )
+
+    with st.form(
+        "create_game",
+        border=True,
+    ):
+        white_name = st.text_input(
+            ui(
+                lang,
+                "your_name",
+            )
+        )
+
+        friend_name = st.text_input(
+            ui(
+                lang,
+                "friend_name",
+            )
+        )
+
+        time_control = st.selectbox(
+            ui(
+                lang,
+                "time_control",
+            ),
+            options=list(
+                TIME_LABELS.keys()
+            ),
+            format_func=lambda x:
+                TIME_LABELS[x],
+        )
+
+        submitted = st.form_submit_button(
+            ui(
+                lang,
+                "create_button",
+            ),
+            type="primary",
+            use_container_width=True,
+        )
 
     if submitted:
-        if not white_name.strip() or not friend_name.strip():
-            st.error(ui(lang, "missing_names"))
+        if (
+            not white_name.strip()
+            or not friend_name.strip()
+        ):
+            st.error(
+                ui(
+                    lang,
+                    "missing_names",
+                )
+            )
         else:
-            gid = db.create_game(white_name=white_name.strip(), black_name=friend_name.strip(), time_control=time_control)
-            st.query_params["seat"] = make_seat_token(gid, "white", APP_SECRET)
+            gid = db.create_game(
+                white_name=white_name.strip(),
+                black_name=friend_name.strip(),
+                time_control=time_control,
+            )
+
+            st.query_params["seat"] = (
+                make_seat_token(
+                    gid,
+                    "white",
+                    APP_SECRET,
+                )
+            )
+
             st.query_params["lang"] = lang
             st.rerun()
 
-    st.divider()
-    st.subheader(ui(lang, "join_title"))
-    render_html(f'<p class="sv-section-intro">{escape(polish(lang, "join_hint"))}</p>')
-    pending_code = str(st.session_state.get("pending_invite_code", "")).strip()
-
-    if not pending_code:
-        with st.form("find_invitation", border=True):
-            entered_code = st.text_input(ui(lang, "invite_code"), max_chars=8, help=ui(lang, "code_help"))
-            find_invite = st.form_submit_button(ui(lang, "find_button"), type="primary", use_container_width=True)
-
-        if find_invite:
-            normalized = db.normalize_invite_code(entered_code)
-            found_game = db.get_game_by_invite_code(normalized)
-            if not found_game:
-                st.error(ui(lang, "code_not_found"))
-            else:
-                st.session_state["pending_invite_code"] = normalized
-                st.rerun()
-    else:
-        found_game = db.get_game_by_invite_code(pending_code)
-        if not found_game:
-            st.session_state.pop("pending_invite_code", None)
-            st.error(ui(lang, "code_not_found"))
-            st.stop()
-
-        sentence = ui(lang, "invited").format(
-            white=escape(str(found_game["white_name"])),
-            black=escape(str(found_game["black_name"])),
+    st.caption(
+        polish(
+            lang,
+            "footer",
         )
-        time_label = TIME_LABELS.get(
-            str(found_game.get("time_control") or ""),
-            str(found_game.get("time_control") or "—"),
-        )
-
-        render_html(f"""
-        <div class="sv-code-card">
-            <div class="sv-kicker">{escape(polish(lang, 'invite_details'))}</div>
-            <div class="sv-invite-title">{sentence}</div>
-            <p class="sv-invite-sub">
-                {escape(polish(lang, 'no_account'))}
-            </p>
-
-            <div class="sv-code">{escape(pending_code)}</div>
-
-            <div class="sv-invite-meta">
-                <span class="sv-meta-pill">
-                    {escape(polish(lang, 'you_will_play'))}: {escape(str(tr(lang, 'black')))}
-                </span>
-                <span class="sv-meta-pill">
-                    {escape(ui(lang, 'time_control'))}: {escape(time_label)}
-                </span>
-            </div>
-
-            <p class="sv-code-note">{escape(ui(lang, 'accept_question'))}</p>
-        </div>
-        """)
-
-        c1, c2 = st.columns([3, 1])
-        with c1:
-            label = ui(lang, "accept_button") if found_game["status"] == "waiting" else ui(lang, "open_button")
-            if st.button(label, type="primary", use_container_width=True):
-                if found_game["status"] in {"waiting", "ready"}:
-                    found_game = db.accept_invite(pending_code)
-                st.session_state.pop("pending_invite_code", None)
-                st.query_params["seat"] = make_seat_token(found_game["id"], "black", APP_SECRET)
-                st.query_params["lang"] = lang
-                st.rerun()
-        with c2:
-            if st.button(ui(lang, "cancel_button"), use_container_width=True):
-                st.session_state.pop("pending_invite_code", None)
-                st.rerun()
-
-    st.caption(polish(lang, "footer"))
+    )
     st.stop()
 
 
