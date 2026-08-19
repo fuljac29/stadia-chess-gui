@@ -182,7 +182,7 @@ POLISH = {
         "invite_details": 'Private game invitation',
         "no_account": 'No account is required.',
         "share_message_v089": '{white} invited you to a private chess game on Stadia.\n\nOpen Premium Arena:\n{url}\n\nInvitation code: {code}\n\nNo account is required.',
-        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
+        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -218,7 +218,7 @@ POLISH = {
         "invite_details": 'Invito a partita privata',
         "no_account": 'Non è necessario creare un account.',
         "share_message_v089": '{white} ti invita a una partita privata di scacchi su Stadia.\n\nApri Premium Arena:\n{url}\n\nCodice invito: {code}\n\nNon è necessario creare un account.',
-        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
+        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -254,7 +254,7 @@ POLISH = {
         "invite_details": 'Private Partie-Einladung',
         "no_account": 'Es ist kein Konto erforderlich.',
         "share_message_v089": '{white} lädt dich zu einer privaten Schachpartie auf Stadia ein.\n\nPremium Arena öffnen:\n{url}\n\nEinladungscode: {code}\n\nEs ist kein Konto erforderlich.',
-        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
+        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -290,7 +290,7 @@ POLISH = {
         "invite_details": 'Invitation à une partie privée',
         "no_account": "Aucun compte n'est nécessaire.",
         "share_message_v089": "{white} vous invite à une partie d'échecs privée sur Stadia.\n\nOuvrez Premium Arena :\n{url}\n\nCode d'invitation : {code}\n\nAucun compte n'est nécessaire.",
-        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
+        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -326,7 +326,7 @@ POLISH = {
         "invite_details": 'Invitación a partida privada',
         "no_account": 'No es necesario crear una cuenta.',
         "share_message_v089": '{white} te invita a una partida privada de ajedrez en Stadia.\n\nAbre Premium Arena:\n{url}\n\nCódigo de invitación: {code}\n\nNo es necesario crear una cuenta.',
-        "footer": 'Stadia Private Chess · v0.8.9.1 Invitations Flow Fix',
+        "footer": 'Stadia Private Chess · v0.8.9.2 Typography Polish',
     },
 }
 
@@ -580,10 +580,10 @@ h1,h2,h3{letter-spacing:-.025em}
     background:#fff;
     margin:4px 0 12px;
 }
-.sv-match-names{font-size:24px;font-weight:900;color:var(--sv-ink)}
-.sv-match-meta{font-size:12px;color:var(--sv-muted);margin-top:4px}
+.sv-match-names{font-size:30px;font-weight:900;color:var(--sv-ink);line-height:1.15}
+.sv-match-meta{font-size:14px;color:var(--sv-muted);margin-top:6px}
 .sv-side-wrap{text-align:right;white-space:nowrap}
-.sv-side-label{font-size:10px;font-weight:900;letter-spacing:.12em;color:var(--sv-muted);margin-bottom:6px}
+.sv-side-label{font-size:12px;font-weight:900;letter-spacing:.12em;color:var(--sv-muted);margin-bottom:8px}
 .sv-side{
     display:inline-block;
     padding:9px 13px;
@@ -604,8 +604,8 @@ h1,h2,h3{letter-spacing:-.025em}
     margin-bottom:14px;
     background:var(--sv-soft);
 }
-.sv-turn-main{font-size:20px;font-weight:900;color:var(--sv-ink)}
-.sv-turn-sub{font-size:13px;color:var(--sv-muted);margin-top:3px}
+.sv-turn-main{font-size:28px;font-weight:900;color:var(--sv-ink);line-height:1.15}
+.sv-turn-sub{font-size:15px;color:var(--sv-muted);margin-top:6px}
 .sv-status{
     display:inline-block;
     padding:7px 11px;
@@ -638,16 +638,16 @@ h1,h2,h3{letter-spacing:-.025em}
 
 div.stButton>button,
 div[data-testid="stFormSubmitButton"]>button{
+    min-height:54px;
+    border-radius:14px;
+    font-weight:850;
+    font-size:15px;
+}
+[data-testid="stLinkButton"] a{
     min-height:52px;
     border-radius:14px;
     font-weight:850;
-    font-size:14px;
-}
-[data-testid="stLinkButton"] a{
-    min-height:50px;
-    border-radius:14px;
-    font-weight:850;
-    font-size:14px;
+    font-size:15px;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -656,6 +656,40 @@ div[data-testid="stForm"]{
     border-color:var(--sv-line);
     border-radius:20px;
     background:#fff;
+}
+
+div[data-testid="stAlert"]{
+    font-size:15px!important;
+    line-height:1.55!important;
+}
+div[data-testid="stAlert"] p{
+    font-size:15px!important;
+    line-height:1.55!important;
+}
+div[data-testid="stExpander"] summary{
+    font-size:14px!important;
+    font-weight:700!important;
+}
+.sv-panel-title{
+    font-size:20px;
+    font-weight:900;
+    color:var(--sv-ink);
+    margin:2px 0 10px;
+}
+.sv-move-box{
+    border:1px solid var(--sv-line);
+    border-radius:14px;
+    background:#f7f7fb;
+    color:var(--sv-ink);
+    padding:14px 15px;
+    font-size:16px;
+    line-height:1.75;
+    font-weight:700;
+    word-break:break-word;
+}
+.sv-footer-note{
+    color:var(--sv-muted);
+    font-size:13px;
 }
 code{word-break:break-all;white-space:pre-wrap}
 
@@ -1331,20 +1365,18 @@ def live_board_fragment() -> None:
     with right:
         moves = db.get_moves(seat.game_id)
 
-        st.markdown(
-            f"**{polish(lang, 'moves_played')} ({len(moves)})**"
+        render_html(
+            f'<div class="sv-panel-title">{escape(polish(lang, "moves_played"))} ({len(moves)})</div>'
         )
 
         if moves:
-            st.code(
-                "  ".join(
-                    move["san"]
-                    for move in moves[-18:]
-                ),
-                language=None,
+            render_html(
+                f'<div class="sv-move-box">{escape("  ".join(move["san"] for move in moves[-18:]))}</div>'
             )
         else:
-            st.caption("—")
+            render_html(
+                '<div class="sv-move-box">—</div>'
+            )
 
         if current["status"] == "finished":
             result_text = polished_result_text(current)
@@ -1376,4 +1408,6 @@ def live_board_fragment() -> None:
 live_board_fragment()
 
 st.divider()
-st.caption(polish(lang, "footer"))
+render_html(
+    f'<div class="sv-footer-note">{escape(polish(lang, "footer"))}</div>'
+)
