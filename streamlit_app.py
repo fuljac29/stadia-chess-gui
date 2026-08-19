@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 from html import escape
 from textwrap import dedent
@@ -170,7 +171,18 @@ POLISH = {
         "share_title": "Share the invitation",
         "waiting_title": "Invitation sent",
         "waiting_text": "As soon as {friend} accepts, the board will open automatically.",
-        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+        "copy_code": 'COPY INVITATION CODE',
+        "copied": 'COPIED ✓',
+        "send_to_friend": 'Send this code to {friend}',
+        "guest_steps": 'What {friend} needs to do',
+        "guest_step_1": 'Open Stadia → Premium Arena',
+        "guest_step_2": 'Enter the 6-character invitation code',
+        "guest_step_3": 'Accept the invitation and play',
+        "you_will_play": 'YOU WILL PLAY',
+        "invite_details": 'Private game invitation',
+        "no_account": 'No account is required.',
+        "share_message_v089": '{white} invited you to a private chess game on Stadia.\n\nOpen Premium Arena:\n{url}\n\nInvitation code: {code}\n\nNo account is required.',
+        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -195,7 +207,18 @@ POLISH = {
         "share_title": "Condividi l'invito",
         "waiting_title": "Invito inviato",
         "waiting_text": "Appena {friend} accetta, la scacchiera si aprirà automaticamente.",
-        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+        "copy_code": 'COPIA CODICE INVITO',
+        "copied": 'COPIATO ✓',
+        "send_to_friend": 'Invia questo codice a {friend}',
+        "guest_steps": 'Cosa deve fare {friend}',
+        "guest_step_1": 'Aprire Stadia → Premium Arena',
+        "guest_step_2": 'Inserire il codice invito di 6 caratteri',
+        "guest_step_3": "Accettare l'invito e giocare",
+        "you_will_play": 'GIOCHERAI',
+        "invite_details": 'Invito a partita privata',
+        "no_account": 'Non è necessario creare un account.',
+        "share_message_v089": '{white} ti invita a una partita privata di scacchi su Stadia.\n\nApri Premium Arena:\n{url}\n\nCodice invito: {code}\n\nNon è necessario creare un account.',
+        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -220,7 +243,18 @@ POLISH = {
         "share_title": "Einladung teilen",
         "waiting_title": "Einladung gesendet",
         "waiting_text": "Sobald {friend} annimmt, öffnet sich das Brett automatisch.",
-        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+        "copy_code": 'EINLADUNGSCODE KOPIEREN',
+        "copied": 'KOPIERT ✓',
+        "send_to_friend": 'Sende diesen Code an {friend}',
+        "guest_steps": 'Was {friend} tun muss',
+        "guest_step_1": 'Stadia → Premium Arena öffnen',
+        "guest_step_2": 'Den 6-stelligen Einladungscode eingeben',
+        "guest_step_3": 'Einladung annehmen und spielen',
+        "you_will_play": 'DU SPIELST',
+        "invite_details": 'Private Partie-Einladung',
+        "no_account": 'Es ist kein Konto erforderlich.',
+        "share_message_v089": '{white} lädt dich zu einer privaten Schachpartie auf Stadia ein.\n\nPremium Arena öffnen:\n{url}\n\nEinladungscode: {code}\n\nEs ist kein Konto erforderlich.',
+        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -245,7 +279,18 @@ POLISH = {
         "share_title": "Partager l'invitation",
         "waiting_title": "Invitation envoyée",
         "waiting_text": "Dès que {friend} accepte, l'échiquier s'ouvrira automatiquement.",
-        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+        "copy_code": "COPIER LE CODE D'INVITATION",
+        "copied": 'COPIÉ ✓',
+        "send_to_friend": 'Envoyez ce code à {friend}',
+        "guest_steps": 'Ce que {friend} doit faire',
+        "guest_step_1": 'Ouvrir Stadia → Premium Arena',
+        "guest_step_2": "Saisir le code d'invitation à 6 caractères",
+        "guest_step_3": "Accepter l'invitation et jouer",
+        "you_will_play": 'VOUS JOUEREZ',
+        "invite_details": 'Invitation à une partie privée',
+        "no_account": "Aucun compte n'est nécessaire.",
+        "share_message_v089": "{white} vous invite à une partie d'échecs privée sur Stadia.\n\nOuvrez Premium Arena :\n{url}\n\nCode d'invitation : {code}\n\nAucun compte n'est nécessaire.",
+        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -270,7 +315,18 @@ POLISH = {
         "share_title": "Compartir invitación",
         "waiting_title": "Invitación enviada",
         "waiting_text": "En cuanto {friend} acepte, el tablero se abrirá automáticamente.",
-        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+        "copy_code": 'COPIAR CÓDIGO DE INVITACIÓN',
+        "copied": 'COPIADO ✓',
+        "send_to_friend": 'Envía este código a {friend}',
+        "guest_steps": 'Lo que debe hacer {friend}',
+        "guest_step_1": 'Abrir Stadia → Premium Arena',
+        "guest_step_2": 'Introducir el código de invitación de 6 caracteres',
+        "guest_step_3": 'Aceptar la invitación y jugar',
+        "you_will_play": 'JUGARÁS',
+        "invite_details": 'Invitación a partida privada',
+        "no_account": 'No es necesario crear una cuenta.',
+        "share_message_v089": '{white} te invita a una partida privada de ajedrez en Stadia.\n\nAbre Premium Arena:\n{url}\n\nCódigo de invitación: {code}\n\nNo es necesario crear una cuenta.',
+        "footer": 'Stadia Private Chess · v0.8.9 Invitations Polish',
     },
 }
 
@@ -288,6 +344,92 @@ def ui(lang: str, key: str) -> str:
 
 def render_html(fragment: str) -> None:
     st.markdown(dedent(fragment).strip(), unsafe_allow_html=True)
+
+
+def copy_button(
+    value: str,
+    label: str,
+    copied_label: str,
+) -> None:
+    """
+    Small browser-only clipboard button.
+
+    It does not touch the chess engine, database, board component,
+    query parameters, or game state.
+    """
+    value_js = json.dumps(str(value))
+    label_js = json.dumps(str(label))
+    copied_js = json.dumps(str(copied_label))
+    label_html = escape(str(label))
+
+    components.html(
+        f"""
+        <style>
+        html,body{{
+            margin:0;
+            padding:0;
+            overflow:hidden;
+            background:transparent;
+            font-family:Arial,sans-serif;
+        }}
+        #sv-copy{{
+            width:100%;
+            min-height:48px;
+            border:0;
+            border-radius:13px;
+            background:#111827;
+            color:#fff;
+            font-size:14px;
+            font-weight:800;
+            cursor:pointer;
+        }}
+        #sv-copy:hover{{filter:brightness(1.08)}}
+        </style>
+
+        <button id="sv-copy" type="button" onclick="copyValue()">
+            {label_html}
+        </button>
+
+        <script>
+        const copyText = {value_js};
+        const originalLabel = {label_js};
+        const copiedLabel = {copied_js};
+
+        async function copyValue(){{
+            const button = document.getElementById("sv-copy");
+            let copied = false;
+
+            try {{
+                await navigator.clipboard.writeText(copyText);
+                copied = true;
+            }} catch (err) {{
+                try {{
+                    const area = document.createElement("textarea");
+                    area.value = copyText;
+                    area.style.position = "fixed";
+                    area.style.opacity = "0";
+                    document.body.appendChild(area);
+                    area.focus();
+                    area.select();
+                    copied = document.execCommand("copy");
+                    document.body.removeChild(area);
+                }} catch (fallbackErr) {{
+                    copied = false;
+                }}
+            }}
+
+            if (copied) {{
+                button.textContent = copiedLabel;
+                setTimeout(() => {{
+                    button.textContent = originalLabel;
+                }}, 1400);
+            }}
+        }}
+        </script>
+        """,
+        height=52,
+        scrolling=False,
+    )
 
 
 def seat_link(game_id: str, role: str, lang: str) -> str:
@@ -364,6 +506,64 @@ h1,h2,h3{letter-spacing:-.025em}
     margin:7px 0 8px;
 }
 .sv-code-note{color:var(--sv-muted);font-size:14px;margin-top:8px}
+.sv-invite-title{
+    font-size:20px;
+    font-weight:900;
+    color:var(--sv-ink);
+    margin:5px 0 2px;
+}
+.sv-invite-sub{
+    color:var(--sv-muted);
+    font-size:14px;
+    line-height:1.55;
+}
+.sv-invite-steps{
+    border:1px solid var(--sv-line);
+    border-radius:18px;
+    padding:16px 18px;
+    background:#fff;
+    margin:12px 0 16px;
+}
+.sv-invite-steps-title{
+    font-weight:900;
+    color:var(--sv-ink);
+    margin-bottom:9px;
+}
+.sv-invite-step{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    color:var(--sv-muted);
+    font-size:14px;
+    margin:7px 0;
+}
+.sv-step-num{
+    flex:0 0 24px;
+    height:24px;
+    border-radius:999px;
+    background:#eeeaff;
+    color:#5038c8;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:900;
+    font-size:12px;
+}
+.sv-invite-meta{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:12px;
+}
+.sv-meta-pill{
+    display:inline-block;
+    padding:7px 10px;
+    border-radius:999px;
+    background:#f5f4fb;
+    color:#475467;
+    font-size:12px;
+    font-weight:800;
+}
 
 .sv-match-card{
     display:flex;
@@ -556,11 +756,30 @@ if not seat:
             white=escape(str(found_game["white_name"])),
             black=escape(str(found_game["black_name"])),
         )
+        time_label = TIME_LABELS.get(
+            str(found_game.get("time_control") or ""),
+            str(found_game.get("time_control") or "—"),
+        )
+
         render_html(f"""
         <div class="sv-code-card">
-            <div class="sv-kicker">{escape(polish(lang, 'invitation_ready'))}</div>
+            <div class="sv-kicker">{escape(polish(lang, 'invite_details'))}</div>
+            <div class="sv-invite-title">{sentence}</div>
+            <p class="sv-invite-sub">
+                {escape(polish(lang, 'no_account'))}
+            </p>
+
             <div class="sv-code">{escape(pending_code)}</div>
-            <p style="font-size:18px;font-weight:800;margin:8px 0 4px">{sentence}</p>
+
+            <div class="sv-invite-meta">
+                <span class="sv-meta-pill">
+                    {escape(polish(lang, 'you_will_play'))}: {escape(str(tr(lang, 'black')))}
+                </span>
+                <span class="sv-meta-pill">
+                    {escape(ui(lang, 'time_control'))}: {escape(time_label)}
+                </span>
+            </div>
+
             <p class="sv-code-note">{escape(ui(lang, 'accept_question'))}</p>
         </div>
         """)
@@ -597,51 +816,146 @@ if game["status"] == "ready":
         pass
 
 
-# WAITING HOST — only this fragment polls for the invited friend.
+# WAITING HOST — invitation UI is static; only the tiny watcher polls.
 if game["status"] == "waiting" and seat.role == "white":
+    invite_code = str(game.get("invite_code") or "").upper()
+    friend_name = str(game["black_name"])
+    white_name = str(game["white_name"])
+
+    render_html(f"""
+    <div class="sv-code-card">
+        <div class="sv-kicker">{escape(polish(lang, 'invitation_ready'))}</div>
+        <div class="sv-invite-title">
+            {escape(polish(lang, 'send_to_friend').format(friend=friend_name))}
+        </div>
+
+        <div class="sv-code">{escape(invite_code)}</div>
+
+        <p class="sv-code-note">
+            {escape(polish(lang, 'code_hint'))}
+        </p>
+    </div>
+    """)
+
+    copy_button(
+        invite_code,
+        polish(lang, "copy_code"),
+        polish(lang, "copied"),
+    )
+
+    render_html(f"""
+    <div class="sv-invite-steps">
+        <div class="sv-invite-steps-title">
+            {escape(polish(lang, 'guest_steps').format(friend=friend_name))}
+        </div>
+
+        <div class="sv-invite-step">
+            <span class="sv-step-num">1</span>
+            <span>{escape(polish(lang, 'guest_step_1'))}</span>
+        </div>
+
+        <div class="sv-invite-step">
+            <span class="sv-step-num">2</span>
+            <span>{escape(polish(lang, 'guest_step_2'))}</span>
+        </div>
+
+        <div class="sv-invite-step">
+            <span class="sv-step-num">3</span>
+            <span>{escape(polish(lang, 'guest_step_3'))}</span>
+        </div>
+    </div>
+    """)
+
+    message = polish(lang, "share_message_v089").format(
+        white=white_name,
+        url=STADIA_PUBLIC_URL + "/",
+        code=invite_code,
+    )
+
+    whatsapp_url = (
+        "https://wa.me/?text="
+        + quote(message, safe="")
+    )
+
+    email_url = (
+        "mailto:?subject="
+        + quote(ui(lang, "email_subject"), safe="")
+        + "&body="
+        + quote(message, safe="")
+    )
+
+    st.markdown(
+        f"##### {polish(lang, 'share_title')}"
+    )
+
+    w1, w2 = st.columns(2)
+
+    with w1:
+        st.link_button(
+            ui(lang, "send_whatsapp"),
+            whatsapp_url,
+            type="primary",
+            use_container_width=True,
+        )
+
+    with w2:
+        st.link_button(
+            ui(lang, "send_email"),
+            email_url,
+            use_container_width=True,
+        )
+
+    with st.expander(
+        polish(lang, "save_game_link")
+    ):
+        st.caption(
+            polish(lang, "save_game_help")
+        )
+        st.code(
+            seat_link(
+                seat.game_id,
+                "white",
+                lang,
+            ),
+            language=None,
+        )
+
     @st.fragment(run_every="2s")
-    def waiting_room() -> None:
-        current = db.get_game(seat.game_id)
+    def acceptance_watch() -> None:
+        current = db.get_game(
+            seat.game_id
+        )
+
         if not current:
-            st.error(tr(lang, "game_missing"))
+            st.error(
+                tr(
+                    lang,
+                    "game_missing",
+                )
+            )
             return
+
         if current["status"] != "waiting":
             st.rerun()
             return
 
-        invite_code = str(current.get("invite_code") or "").upper()
-        friend_name = str(current["black_name"])
-        render_html(f"""
-        <div class="sv-code-card">
-            <div class="sv-kicker">{escape(polish(lang, 'invitation_ready'))}</div>
-            <div class="sv-code">{escape(invite_code)}</div>
-            <p style="font-size:18px;font-weight:800;margin:8px 0 2px">
-                {escape(ui(lang, 'tell_friend').format(friend=friend_name))}
-            </p>
-            <p class="sv-code-note">{escape(polish(lang, 'code_hint'))}</p>
-        </div>
-        """)
         st.info(
-            polish(lang, "waiting_text").format(
+            polish(
+                lang,
+                "waiting_text",
+            ).format(
                 friend=friend_name
             )
         )
 
-        message = ui(lang, "share_message").format(white=current["white_name"], url=STADIA_PUBLIC_URL + "/", code=invite_code)
-        whatsapp_url = "https://wa.me/?text=" + quote(message, safe="")
-        email_url = "mailto:?subject=" + quote(ui(lang, "email_subject"), safe="") + "&body=" + quote(message, safe="")
-        st.markdown(f"##### {polish(lang, 'share_title')}")
-        w1, w2 = st.columns(2)
-        with w1:
-            st.link_button(ui(lang, "send_whatsapp"), whatsapp_url, type="primary", use_container_width=True)
-        with w2:
-            st.link_button(ui(lang, "send_email"), email_url, use_container_width=True)
-        with st.expander(polish(lang, "save_game_link")):
-            st.caption(polish(lang, "save_game_help"))
-            st.code(seat_link(seat.game_id, "white", lang), language=None)
+    acceptance_watch()
 
-    waiting_room()
-    st.caption(polish(lang, "footer"))
+    st.caption(
+        polish(
+            lang,
+            "footer",
+        )
+    )
     st.stop()
 
 
