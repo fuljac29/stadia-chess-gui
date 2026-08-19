@@ -146,6 +146,142 @@ UI = {
 }
 
 
+POLISH = {
+    "EN": {
+        "arena_badge": "PRIVATE CHESS ARENA",
+        "public_intro": "Start a private game in seconds. No account is needed for your guest.",
+        "create_hint": "Create a game and share the 6-character code with your friend.",
+        "join_hint": "Already have a code? Enter it below and join the game.",
+        "invitation_ready": "INVITATION READY",
+        "code_hint": "Send only this code. Your friend opens Premium Arena and enters it.",
+        "save_game_link": "Save my game link",
+        "save_game_help": "Keep this private link if you want to return to this exact game later.",
+        "you_play": "YOU PLAY",
+        "your_turn": "Your turn — choose a piece.",
+        "opponent_turn": "Waiting for your opponent's move.",
+        "game_over": "GAME FINISHED",
+        "white_wins": "{name} wins with White.",
+        "black_wins": "{name} wins with Black.",
+        "draw": "Draw.",
+        "play_again": "PLAY ANOTHER GAME",
+        "back_stadia": "BACK TO STADIA",
+        "moves_played": "Moves played",
+        "game_reference": "Game reference",
+        "share_title": "Share the invitation",
+        "waiting_title": "Invitation sent",
+        "waiting_text": "As soon as {friend} accepts, the board will open automatically.",
+        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+    },
+    "IT": {
+        "arena_badge": "ARENA SCACCHI PRIVATA",
+        "public_intro": "Avvia una partita privata in pochi secondi. Il tuo invitato non deve creare un account.",
+        "create_hint": "Crea la partita e comunica al tuo amico il codice di 6 caratteri.",
+        "join_hint": "Hai già un codice? Inseriscilo qui sotto ed entra nella partita.",
+        "invitation_ready": "INVITO PRONTO",
+        "code_hint": "Invia solo questo codice. Il tuo amico apre Premium Arena e lo inserisce.",
+        "save_game_link": "Salva il link della partita",
+        "save_game_help": "Conserva questo link privato se vuoi tornare esattamente a questa partita.",
+        "you_play": "TU GIOCHI",
+        "your_turn": "Tocca a te — scegli un pezzo.",
+        "opponent_turn": "In attesa della mossa dell'avversario.",
+        "game_over": "PARTITA TERMINATA",
+        "white_wins": "{name} vince con il Bianco.",
+        "black_wins": "{name} vince con il Nero.",
+        "draw": "Patta.",
+        "play_again": "GIOCA UN'ALTRA PARTITA",
+        "back_stadia": "TORNA A STADIA",
+        "moves_played": "Mosse giocate",
+        "game_reference": "Riferimento partita",
+        "share_title": "Condividi l'invito",
+        "waiting_title": "Invito inviato",
+        "waiting_text": "Appena {friend} accetta, la scacchiera si aprirà automaticamente.",
+        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+    },
+    "DE": {
+        "arena_badge": "PRIVATE SCHACH-ARENA",
+        "public_intro": "Starte in wenigen Sekunden eine private Partie. Dein Gast braucht kein Konto.",
+        "create_hint": "Erstelle eine Partie und sende deinem Freund den 6-stelligen Code.",
+        "join_hint": "Du hast bereits einen Code? Gib ihn unten ein und tritt der Partie bei.",
+        "invitation_ready": "EINLADUNG BEREIT",
+        "code_hint": "Sende nur diesen Code. Dein Freund öffnet die Premium Arena und gibt ihn ein.",
+        "save_game_link": "Meinen Partie-Link speichern",
+        "save_game_help": "Bewahre diesen privaten Link auf, um später genau zu dieser Partie zurückzukehren.",
+        "you_play": "DU SPIELST",
+        "your_turn": "Du bist am Zug — wähle eine Figur.",
+        "opponent_turn": "Warte auf den Zug deines Gegners.",
+        "game_over": "PARTIE BEENDET",
+        "white_wins": "{name} gewinnt mit Weiß.",
+        "black_wins": "{name} gewinnt mit Schwarz.",
+        "draw": "Remis.",
+        "play_again": "NOCH EINE PARTIE",
+        "back_stadia": "ZURÜCK ZU STADIA",
+        "moves_played": "Gespielte Züge",
+        "game_reference": "Partie-Referenz",
+        "share_title": "Einladung teilen",
+        "waiting_title": "Einladung gesendet",
+        "waiting_text": "Sobald {friend} annimmt, öffnet sich das Brett automatisch.",
+        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+    },
+    "FR": {
+        "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
+        "public_intro": "Lancez une partie privée en quelques secondes. Votre invité n'a pas besoin de compte.",
+        "create_hint": "Créez une partie et envoyez le code à 6 caractères à votre ami.",
+        "join_hint": "Vous avez déjà un code ? Saisissez-le ci-dessous pour rejoindre la partie.",
+        "invitation_ready": "INVITATION PRÊTE",
+        "code_hint": "Envoyez uniquement ce code. Votre ami ouvre Premium Arena et le saisit.",
+        "save_game_link": "Enregistrer mon lien de partie",
+        "save_game_help": "Conservez ce lien privé pour revenir plus tard exactement à cette partie.",
+        "you_play": "VOUS JOUEZ",
+        "your_turn": "À vous de jouer — choisissez une pièce.",
+        "opponent_turn": "En attente du coup de votre adversaire.",
+        "game_over": "PARTIE TERMINÉE",
+        "white_wins": "{name} gagne avec les Blancs.",
+        "black_wins": "{name} gagne avec les Noirs.",
+        "draw": "Nulle.",
+        "play_again": "JOUER UNE AUTRE PARTIE",
+        "back_stadia": "RETOUR À STADIA",
+        "moves_played": "Coups joués",
+        "game_reference": "Référence de partie",
+        "share_title": "Partager l'invitation",
+        "waiting_title": "Invitation envoyée",
+        "waiting_text": "Dès que {friend} accepte, l'échiquier s'ouvrira automatiquement.",
+        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+    },
+    "ES": {
+        "arena_badge": "ARENA DE AJEDREZ PRIVADA",
+        "public_intro": "Inicia una partida privada en segundos. Tu invitado no necesita crear una cuenta.",
+        "create_hint": "Crea una partida y envía a tu amigo el código de 6 caracteres.",
+        "join_hint": "¿Ya tienes un código? Introdúcelo abajo para entrar en la partida.",
+        "invitation_ready": "INVITACIÓN LISTA",
+        "code_hint": "Envía solo este código. Tu amigo abre Premium Arena y lo introduce.",
+        "save_game_link": "Guardar el enlace de mi partida",
+        "save_game_help": "Guarda este enlace privado para volver más tarde exactamente a esta partida.",
+        "you_play": "TÚ JUEGAS",
+        "your_turn": "Tu turno — elige una pieza.",
+        "opponent_turn": "Esperando la jugada de tu oponente.",
+        "game_over": "PARTIDA TERMINADA",
+        "white_wins": "{name} gana con Blancas.",
+        "black_wins": "{name} gana con Negras.",
+        "draw": "Tablas.",
+        "play_again": "JUGAR OTRA PARTIDA",
+        "back_stadia": "VOLVER A STADIA",
+        "moves_played": "Jugadas realizadas",
+        "game_reference": "Referencia de partida",
+        "share_title": "Compartir invitación",
+        "waiting_title": "Invitación enviada",
+        "waiting_text": "En cuanto {friend} acepte, el tablero se abrirá automáticamente.",
+        "footer": "Stadia Private Chess · v0.8.8 UI Polish",
+    },
+}
+
+
+def polish(lang: str, key: str) -> str:
+    return POLISH.get(lang, POLISH["EN"]).get(
+        key,
+        POLISH["EN"].get(key, key),
+    )
+
+
 def ui(lang: str, key: str) -> str:
     return UI.get(lang, UI["EN"]).get(key, UI["EN"].get(key, key))
 
@@ -162,15 +298,170 @@ def seat_link(game_id: str, role: str, lang: str) -> str:
 
 render_html("""
 <style>
-.block-container{max-width:1220px;padding-top:1.6rem;padding-bottom:4rem}
-h1,h2,h3{letter-spacing:-.02em}
-.sv-hero{border:1px solid #e7e4ff;border-radius:26px;padding:30px;background:linear-gradient(135deg,#fff,#faf8ff);margin-bottom:22px}
-.sv-hero h1{font-size:46px;margin:8px 0 4px}.sv-hero .gradient{background:linear-gradient(90deg,#ec3f83,#7657ff);-webkit-background-clip:text;background-clip:text;color:transparent;margin:20px 0 8px}
-.sv-kicker{font-size:12px;font-weight:900;letter-spacing:.12em;color:#7657ff}.sv-lead{font-size:17px;color:#667085;max-width:780px;line-height:1.6}
-.sv-code-card{border:1px solid #ddd6fe;border-radius:22px;padding:24px;background:linear-gradient(135deg,#fff,#faf8ff);margin:14px 0}.sv-code{font-size:42px;font-weight:950;letter-spacing:.18em;color:#111827;margin:6px 0 8px}
-.sv-status{display:inline-block;padding:7px 11px;border-radius:999px;background:#f0edff;color:#5038c8;font-weight:800;font-size:13px}.sv-side{display:inline-block;padding:8px 12px;border-radius:999px;background:#111827;color:#fff;font-weight:900}
-div.stButton>button,div[data-testid="stFormSubmitButton"]>button{min-height:54px;border-radius:14px;font-weight:850;font-size:15px}[data-testid="stLinkButton"] a{min-height:54px;border-radius:14px;font-weight:850;font-size:15px;display:flex;align-items:center;justify-content:center}code{word-break:break-all;white-space:pre-wrap}
-@media(max-width:760px){.sv-hero{padding:22px}.sv-hero h1{font-size:36px}.sv-code{font-size:34px}}
+:root{
+    --sv-ink:#111827;
+    --sv-muted:#667085;
+    --sv-purple:#7657ff;
+    --sv-purple-dark:#5b3ff0;
+    --sv-pink:#ec3f83;
+    --sv-line:#e8e5f5;
+    --sv-soft:#f8f7ff;
+    --sv-success:#087f5b;
+}
+
+.block-container{
+    max-width:1180px;
+    padding-top:1.35rem;
+    padding-bottom:3.5rem;
+}
+h1,h2,h3{letter-spacing:-.025em}
+
+.sv-hero{
+    border:1px solid var(--sv-line);
+    border-radius:28px;
+    padding:32px 34px;
+    background:
+        radial-gradient(circle at 92% 10%,rgba(118,87,255,.10),transparent 30%),
+        linear-gradient(135deg,#fff 0%,#fbfaff 100%);
+    margin-bottom:24px;
+    box-shadow:0 14px 40px rgba(64,45,130,.06);
+}
+.sv-hero.compact{
+    padding:18px 24px;
+    margin-bottom:18px;
+    border-radius:22px;
+}
+.sv-hero.compact h1{font-size:30px;margin:5px 0 0}
+.sv-hero h1{font-size:46px;margin:8px 0 4px;color:var(--sv-ink)}
+.sv-hero .gradient{
+    background:linear-gradient(90deg,var(--sv-pink),var(--sv-purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin:18px 0 8px;
+}
+.sv-kicker{
+    font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--sv-purple);
+}
+.sv-lead{font-size:16px;color:var(--sv-muted);max-width:800px;line-height:1.65}
+
+.sv-section-intro{
+    color:var(--sv-muted);
+    margin:-4px 0 14px;
+    line-height:1.55;
+}
+.sv-code-card{
+    border:1px solid #ddd6fe;
+    border-radius:24px;
+    padding:25px;
+    background:linear-gradient(135deg,#fff,#faf8ff);
+    margin:14px 0;
+    box-shadow:0 12px 30px rgba(91,63,240,.06);
+}
+.sv-code{
+    font-size:44px;
+    font-weight:950;
+    letter-spacing:.20em;
+    color:var(--sv-ink);
+    margin:7px 0 8px;
+}
+.sv-code-note{color:var(--sv-muted);font-size:14px;margin-top:8px}
+
+.sv-match-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    padding:18px 20px;
+    border:1px solid var(--sv-line);
+    border-radius:20px;
+    background:#fff;
+    margin:4px 0 12px;
+}
+.sv-match-names{font-size:24px;font-weight:900;color:var(--sv-ink)}
+.sv-match-meta{font-size:12px;color:var(--sv-muted);margin-top:4px}
+.sv-side-wrap{text-align:right;white-space:nowrap}
+.sv-side-label{font-size:10px;font-weight:900;letter-spacing:.12em;color:var(--sv-muted);margin-bottom:6px}
+.sv-side{
+    display:inline-block;
+    padding:9px 13px;
+    border-radius:999px;
+    background:var(--sv-ink);
+    color:#fff;
+    font-weight:900;
+}
+
+.sv-turn-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    border:1px solid var(--sv-line);
+    border-radius:18px;
+    padding:13px 16px;
+    margin-bottom:14px;
+    background:var(--sv-soft);
+}
+.sv-turn-main{font-size:20px;font-weight:900;color:var(--sv-ink)}
+.sv-turn-sub{font-size:13px;color:var(--sv-muted);margin-top:3px}
+.sv-status{
+    display:inline-block;
+    padding:7px 11px;
+    border-radius:999px;
+    background:#eeeaff;
+    color:#5038c8;
+    font-weight:900;
+    font-size:11px;
+    letter-spacing:.04em;
+}
+.sv-result-card{
+    border:1px solid #cdeee3;
+    background:#f3fcf8;
+    border-radius:18px;
+    padding:17px;
+    margin:10px 0 12px;
+}
+.sv-result-title{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.12em;
+    color:var(--sv-success);
+}
+.sv-result-text{
+    font-size:19px;
+    font-weight:900;
+    color:var(--sv-ink);
+    margin-top:5px;
+}
+
+div.stButton>button,
+div[data-testid="stFormSubmitButton"]>button{
+    min-height:52px;
+    border-radius:14px;
+    font-weight:850;
+    font-size:14px;
+}
+[data-testid="stLinkButton"] a{
+    min-height:50px;
+    border-radius:14px;
+    font-weight:850;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+div[data-testid="stForm"]{
+    border-color:var(--sv-line);
+    border-radius:20px;
+    background:#fff;
+}
+code{word-break:break-all;white-space:pre-wrap}
+
+@media(max-width:760px){
+    .sv-hero{padding:22px}
+    .sv-hero h1{font-size:36px}
+    .sv-code{font-size:34px}
+    .sv-match-card,.sv-turn-card{align-items:flex-start;flex-direction:column}
+    .sv-side-wrap{text-align:left}
+}
 </style>
 """)
 
@@ -189,25 +480,34 @@ with st.sidebar:
         st.query_params["lang"] = lang
         st.rerun()
 
-render_html(f"""
-<div class="sv-hero">
-<div class="sv-kicker">STADIA</div>
-<h1>{escape(str(tr(lang, 'title')))}</h1>
-<h2 class="gradient">{escape(str(tr(lang, 'tagline')))}</h2>
-<p class="sv-lead">{escape(str(tr(lang, 'subtitle')))}</p>
-</div>
-""")
-
 seat_token = str(st.query_params.get("seat", "")).strip()
 seat = verify_seat_token(seat_token, APP_SECRET) if seat_token else None
 if seat_token and not seat:
     st.error(tr(lang, "invalid_link"))
     st.stop()
 
+if seat:
+    render_html(f"""
+    <div class="sv-hero compact">
+        <div class="sv-kicker">{escape(polish(lang, 'arena_badge'))}</div>
+        <h1>{escape(str(tr(lang, 'title')))}</h1>
+    </div>
+    """)
+else:
+    render_html(f"""
+    <div class="sv-hero">
+        <div class="sv-kicker">{escape(polish(lang, 'arena_badge'))}</div>
+        <h1>{escape(str(tr(lang, 'title')))}</h1>
+        <h2 class="gradient">{escape(str(tr(lang, 'tagline')))}</h2>
+        <p class="sv-lead">{escape(polish(lang, 'public_intro'))}</p>
+    </div>
+    """)
+
 
 # PUBLIC PAGE — CREATE OR ACCEPT BY SHORT CODE
 if not seat:
     st.subheader(ui(lang, "create_title"))
+    render_html(f'<p class="sv-section-intro">{escape(polish(lang, "create_hint"))}</p>')
     with st.form("create_game", border=True):
         white_name = st.text_input(ui(lang, "your_name"))
         friend_name = st.text_input(ui(lang, "friend_name"))
@@ -229,6 +529,7 @@ if not seat:
 
     st.divider()
     st.subheader(ui(lang, "join_title"))
+    render_html(f'<p class="sv-section-intro">{escape(polish(lang, "join_hint"))}</p>')
     pending_code = str(st.session_state.get("pending_invite_code", "")).strip()
 
     if not pending_code:
@@ -256,9 +557,12 @@ if not seat:
             black=escape(str(found_game["black_name"])),
         )
         render_html(f"""
-        <div class="sv-code-card"><div class="sv-kicker">{escape(ui(lang, 'invite_code'))}</div>
-        <div class="sv-code">{escape(pending_code)}</div><p style="font-size:18px;margin:8px 0 0">{sentence}</p>
-        <p style="color:#667085">{escape(ui(lang, 'accept_question'))}</p></div>
+        <div class="sv-code-card">
+            <div class="sv-kicker">{escape(polish(lang, 'invitation_ready'))}</div>
+            <div class="sv-code">{escape(pending_code)}</div>
+            <p style="font-size:18px;font-weight:800;margin:8px 0 4px">{sentence}</p>
+            <p class="sv-code-note">{escape(ui(lang, 'accept_question'))}</p>
+        </div>
         """)
 
         c1, c2 = st.columns([3, 1])
@@ -276,7 +580,7 @@ if not seat:
                 st.session_state.pop("pending_invite_code", None)
                 st.rerun()
 
-    st.info("v0.8.3 — short invitation code and smooth click-to-move board.")
+    st.caption(polish(lang, "footer"))
     st.stop()
 
 
@@ -308,43 +612,80 @@ if game["status"] == "waiting" and seat.role == "white":
         invite_code = str(current.get("invite_code") or "").upper()
         friend_name = str(current["black_name"])
         render_html(f"""
-        <div class="sv-code-card"><div class="sv-kicker">{escape(ui(lang, 'your_code'))}</div>
-        <div class="sv-code">{escape(invite_code)}</div>
-        <p style="font-size:18px;margin:8px 0 0">{escape(ui(lang, 'tell_friend').format(friend=friend_name))}</p></div>
+        <div class="sv-code-card">
+            <div class="sv-kicker">{escape(polish(lang, 'invitation_ready'))}</div>
+            <div class="sv-code">{escape(invite_code)}</div>
+            <p style="font-size:18px;font-weight:800;margin:8px 0 2px">
+                {escape(ui(lang, 'tell_friend').format(friend=friend_name))}
+            </p>
+            <p class="sv-code-note">{escape(polish(lang, 'code_hint'))}</p>
+        </div>
         """)
-        st.warning(ui(lang, "waiting_friend").format(friend=friend_name))
+        st.info(
+            polish(lang, "waiting_text").format(
+                friend=friend_name
+            )
+        )
 
         message = ui(lang, "share_message").format(white=current["white_name"], url=STADIA_PUBLIC_URL + "/", code=invite_code)
         whatsapp_url = "https://wa.me/?text=" + quote(message, safe="")
         email_url = "mailto:?subject=" + quote(ui(lang, "email_subject"), safe="") + "&body=" + quote(message, safe="")
-        st.markdown(f"##### {ui(lang, 'send_invitation')}")
+        st.markdown(f"##### {polish(lang, 'share_title')}")
         w1, w2 = st.columns(2)
         with w1:
             st.link_button(ui(lang, "send_whatsapp"), whatsapp_url, type="primary", use_container_width=True)
         with w2:
             st.link_button(ui(lang, "send_email"), email_url, use_container_width=True)
-        with st.expander(ui(lang, "private_return")):
-            st.caption(ui(lang, "private_return_help"))
+        with st.expander(polish(lang, "save_game_link")):
+            st.caption(polish(lang, "save_game_help"))
             st.code(seat_link(seat.game_id, "white", lang), language=None)
 
     waiting_room()
-    st.caption("Stadia Chess GUI v0.8.3")
+    st.caption(polish(lang, "footer"))
     st.stop()
 
 
-# STATIC GAME HEADER
+# STATIC GAME HEADER — presentation only
 role_label = tr(lang, seat.role)
-top1, top2 = st.columns([3, 1])
-with top1:
-    st.markdown(f"### {game['white_name']} vs {game['black_name']}")
-    st.caption(f"Game ID: {game['id'][:12].upper()}")
-with top2:
-    st.markdown(f"**{ui(lang, 'side')}**")
-    render_html(f'<span class="sv-side">{escape(str(role_label))}</span>')
+render_html(f"""
+<div class="sv-match-card">
+    <div>
+        <div class="sv-match-names">
+            {escape(str(game['white_name']))} <span style="color:#98a2b3">vs</span> {escape(str(game['black_name']))}
+        </div>
+        <div class="sv-match-meta">
+            {escape(polish(lang, 'game_reference'))}: {escape(game['id'][:12].upper())}
+        </div>
+    </div>
+    <div class="sv-side-wrap">
+        <div class="sv-side-label">{escape(polish(lang, 'you_play'))}</div>
+        <span class="sv-side">{escape(str(role_label))}</span>
+    </div>
+</div>
+""")
 
-with st.expander(ui(lang, "private_return")):
-    st.caption(ui(lang, "private_return_help"))
+with st.expander(polish(lang, "save_game_link")):
+    st.caption(polish(lang, "save_game_help"))
     st.code(seat_link(seat.game_id, seat.role, lang), language=None)
+
+
+def polished_result_text(current: dict) -> str:
+    result = str(current.get("result") or "").strip()
+
+    if result == "1-0":
+        return polish(lang, "white_wins").format(
+            name=current.get("white_name", "White")
+        )
+
+    if result == "0-1":
+        return polish(lang, "black_wins").format(
+            name=current.get("black_name", "Black")
+        )
+
+    if result == "1/2-1/2":
+        return polish(lang, "draw")
+
+    return f"{tr(lang, 'result')}: {result or '—'}"
 
 
 # STADIA CHESS BOARD v0.8.7 — BROWSER-NATIVE, FIXED, NO FONT DEPENDENCY
@@ -430,34 +771,39 @@ def live_board_fragment() -> None:
     if move_error:
         st.error(move_error)
 
-    status_col, turn_col = st.columns([1, 2])
-
-    with status_col:
-        st.markdown(f"**{ui(lang, 'status')}**")
-        render_html(
-            f'<span class="sv-status">'
-            f'{escape(str(current["status"]).upper())}'
-            f'</span>'
+    if turn_role == "white":
+        turn_text = (
+            "White to move"
+            if lang == "EN"
+            else "Muove il Bianco"
+            if lang == "IT"
+            else f"{tr(lang, 'turn')}: {tr(lang, turn_role)}"
+        )
+    else:
+        turn_text = (
+            "Black to move"
+            if lang == "EN"
+            else "Muove il Nero"
+            if lang == "IT"
+            else f"{tr(lang, 'turn')}: {tr(lang, turn_role)}"
         )
 
-    with turn_col:
-        if turn_role == "white":
-            turn_text = (
-                "White to move"
-                if lang == "EN"
-                else "Muove il Bianco"
-                if lang == "IT"
-                else f"{tr(lang, 'turn')}: {tr(lang, turn_role)}"
-            )
-        else:
-            turn_text = (
-                "Black to move"
-                if lang == "EN"
-                else "Muove il Nero"
-                if lang == "IT"
-                else f"{tr(lang, 'turn')}: {tr(lang, turn_role)}"
-            )
-        st.markdown(f"### {turn_text}")
+    if current["status"] == "finished":
+        turn_sub = polish(lang, "game_over")
+    elif can_move:
+        turn_sub = polish(lang, "your_turn")
+    else:
+        turn_sub = polish(lang, "opponent_turn")
+
+    render_html(f"""
+    <div class="sv-turn-card">
+        <div>
+            <div class="sv-turn-main">{escape(turn_text)}</div>
+            <div class="sv-turn-sub">{escape(turn_sub)}</div>
+        </div>
+        <span class="sv-status">{escape(str(current["status"]).upper())}</span>
+    </div>
+    """)
 
     left, right = st.columns(
         [3, 1.15],
@@ -485,7 +831,7 @@ def live_board_fragment() -> None:
         moves = db.get_moves(seat.game_id)
 
         st.markdown(
-            f"**{ui(lang, 'moves')} ({len(moves)})**"
+            f"**{polish(lang, 'moves_played')} ({len(moves)})**"
         )
 
         if moves:
@@ -500,22 +846,33 @@ def live_board_fragment() -> None:
             st.caption("—")
 
         if current["status"] == "finished":
-            st.success(
-                f"{tr(lang, 'finished')} — "
-                f"{tr(lang, 'result')}: "
-                f"{current['result']}"
+            result_text = polished_result_text(current)
+            render_html(f"""
+            <div class="sv-result-card">
+                <div class="sv-result-title">{escape(polish(lang, 'game_over'))}</div>
+                <div class="sv-result-text">{escape(result_text)}</div>
+            </div>
+            """)
+
+            st.link_button(
+                polish(lang, "play_again"),
+                STADIA_PUBLIC_URL + "/",
+                type="primary",
+                use_container_width=True,
             )
+            st.link_button(
+                polish(lang, "back_stadia"),
+                "https://stadiaorg.com/",
+                use_container_width=True,
+            )
+
         elif can_move:
-            st.info(ui(lang, "click_piece"))
+            st.info(polish(lang, "your_turn"))
         else:
-            st.info(ui(lang, "waiting_other"))
+            st.info(polish(lang, "opponent_turn"))
 
 
 live_board_fragment()
 
 st.divider()
-st.caption(
-    "Stadia Chess GUI v0.8.7 FINAL — browser-native board; "
-    "embedded real chess-piece images; local piece selection; "
-    "fragment-only synchronization; fixed board position."
-)
+st.caption(polish(lang, "footer"))
