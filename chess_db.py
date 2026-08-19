@@ -20,6 +20,176 @@ DEFAULT_DB_PATH = Path(
 INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 INVITE_CODE_LENGTH = 6
 
+CLOCK_CONTROLS: dict[str, tuple[int, int] | None] = {
+    "rapid_15_10": (15 * 60_000, 10_000),
+    "blitz_5_3": (5 * 60_000, 3_000),
+    "relaxed": None,
+}
+
+
+def clock_config(
+    time_control: str,
+) -> tuple[int, int] | None:
+    return CLOCK_CONTROLS.get(
+        str(time_control or "").strip(),
+        None,
+    )
+
+
+def _clock_now_dt() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _clock_now_iso(
+    now_dt: datetime | None = None,
+) -> str:
+    current = now_dt or _clock_now_dt()
+    return current.isoformat(
+        timespec="milliseconds"
+    )
+
+
+def _parse_clock_time(
+    value: str | None,
+) -> datetime | None:
+    raw = str(value or "").strip()
+
+    if not raw:
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(
+            tzinfo=timezone.utc
+        )
+
+    return parsed.astimezone(
+        timezone.utc
+    )
+
+
+def _elapsed_ms(
+    started_at: str | None,
+    now_dt: datetime,
+) -> int:
+    started = _parse_clock_time(
+        started_at
+    )
+
+    if not started:
+        return 0
+
+    elapsed = (
+        now_dt - started
+    ).total_seconds()
+
+    return max(
+        0,
+        int(elapsed * 1000),
+    )
+
+
+def _timeout_result(
+    active_color: str,
+) -> str:
+    return (
+        "0-1"
+        if active_color == "white"
+        else "1-0"
+    )
+
+
+def _clock_snapshot(
+    row: sqlite3.Row | dict[str, Any],
+    now_dt: datetime,
+) -> dict[str, Any]:
+    config = clock_config(
+        row["time_control"]
+    )
+
+    board = chess.Board(
+        row["fen"]
+    )
+
+    active_color = (
+        "white"
+        if board.turn == chess.WHITE
+        else "black"
+    )
+
+    finish_reason = (
+        row["finish_reason"]
+        if "finish_reason" in row.keys()
+        else ""
+    )
+
+    if config is None:
+        return {
+            "enabled": False,
+            "time_control": row["time_control"],
+            "increment_ms": 0,
+            "white_ms": None,
+            "black_ms": None,
+            "active_color": active_color,
+            "running": False,
+            "status": row["status"],
+            "result": row["result"],
+            "finish_reason": finish_reason,
+        }
+
+    base_ms, increment_ms = config
+
+    white_ms = (
+        int(row["white_clock_ms"])
+        if row["white_clock_ms"] is not None
+        else base_ms
+    )
+
+    black_ms = (
+        int(row["black_clock_ms"])
+        if row["black_clock_ms"] is not None
+        else base_ms
+    )
+
+    running = (
+        row["status"] == "active"
+        and bool(row["clock_started_at"])
+    )
+
+    if running:
+        elapsed = _elapsed_ms(
+            row["clock_started_at"],
+            now_dt,
+        )
+
+        if active_color == "white":
+            white_ms = max(
+                0,
+                white_ms - elapsed,
+            )
+        else:
+            black_ms = max(
+                0,
+                black_ms - elapsed,
+            )
+
+    return {
+        "enabled": True,
+        "time_control": row["time_control"],
+        "increment_ms": increment_ms,
+        "white_ms": white_ms,
+        "black_ms": black_ms,
+        "active_color": active_color,
+        "running": running,
+        "status": row["status"],
+        "result": row["result"],
+        "finish_reason": finish_reason,
+    }
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -103,7 +273,11 @@ def init_db(
                 archived INTEGER NOT NULL DEFAULT 0,
                 premium_source TEXT NOT NULL DEFAULT '',
                 premium_until TEXT NOT NULL DEFAULT '',
-                invite_code TEXT
+                invite_code TEXT,
+                white_clock_ms INTEGER,
+                black_clock_ms INTEGER,
+                clock_started_at TEXT,
+                finish_reason TEXT NOT NULL DEFAULT ''
             );
 
             CREATE TABLE IF NOT EXISTS moves (
@@ -139,6 +313,101 @@ def init_db(
         if "invite_code" not in columns:
             conn.execute(
                 "ALTER TABLE games ADD COLUMN invite_code TEXT"
+            )
+
+
+        if "white_clock_ms" not in columns:
+            conn.execute(
+                "ALTER TABLE games ADD COLUMN white_clock_ms INTEGER"
+            )
+
+        if "black_clock_ms" not in columns:
+            conn.execute(
+                "ALTER TABLE games ADD COLUMN black_clock_ms INTEGER"
+            )
+
+        if "clock_started_at" not in columns:
+            conn.execute(
+                "ALTER TABLE games ADD COLUMN clock_started_at TEXT"
+            )
+
+        if "finish_reason" not in columns:
+            conn.execute(
+                "ALTER TABLE games ADD COLUMN finish_reason TEXT NOT NULL DEFAULT ''"
+            )
+
+        # v0.9.0 migration:
+        # older timed games receive a full clock. Active games begin timing
+        # from this migration moment, so no time is charged retroactively.
+        migration_now = _clock_now_iso()
+
+        clock_rows = conn.execute(
+            """
+            SELECT
+                id,
+                status,
+                time_control,
+                white_clock_ms,
+                black_clock_ms,
+                clock_started_at
+            FROM games
+            """
+        ).fetchall()
+
+        for clock_row in clock_rows:
+            config = clock_config(
+                clock_row["time_control"]
+            )
+
+            if config is None:
+                conn.execute(
+                    """
+                    UPDATE games
+                    SET white_clock_ms = NULL,
+                        black_clock_ms = NULL,
+                        clock_started_at = NULL
+                    WHERE id = ?
+                    """,
+                    (clock_row["id"],),
+                )
+                continue
+
+            base_ms, _ = config
+
+            white_ms = (
+                clock_row["white_clock_ms"]
+                if clock_row["white_clock_ms"] is not None
+                else base_ms
+            )
+
+            black_ms = (
+                clock_row["black_clock_ms"]
+                if clock_row["black_clock_ms"] is not None
+                else base_ms
+            )
+
+            if clock_row["status"] == "active":
+                clock_started_at = (
+                    clock_row["clock_started_at"]
+                    or migration_now
+                )
+            else:
+                clock_started_at = None
+
+            conn.execute(
+                """
+                UPDATE games
+                SET white_clock_ms = ?,
+                    black_clock_ms = ?,
+                    clock_started_at = ?
+                WHERE id = ?
+                """,
+                (
+                    white_ms,
+                    black_ms,
+                    clock_started_at,
+                    clock_row["id"],
+                ),
             )
 
         # Empty values are treated as missing.
@@ -189,8 +458,20 @@ def create_game(
     now = utc_now()
     board = chess.Board()
 
+    config = clock_config(
+        time_control
+    )
+
+    initial_clock_ms = (
+        config[0]
+        if config is not None
+        else None
+    )
+
     with connection(db_path) as conn:
-        invite_code = _generate_invite_code(conn)
+        invite_code = _generate_invite_code(
+            conn
+        )
 
         conn.execute(
             """
@@ -204,10 +485,14 @@ def create_game(
                 time_control,
                 created_at,
                 updated_at,
-                invite_code
+                invite_code,
+                white_clock_ms,
+                black_clock_ms,
+                clock_started_at,
+                finish_reason
             )
             VALUES (
-                ?, ?, ?, 'waiting', ?, '', ?, ?, ?, ?
+                ?, ?, ?, 'waiting', ?, '', ?, ?, ?, ?, ?, ?, NULL, ''
             )
             """,
             (
@@ -219,11 +504,12 @@ def create_game(
                 now,
                 now,
                 invite_code,
+                initial_clock_ms,
+                initial_clock_ms,
             ),
         )
 
     return game_id
-
 
 def get_game(
     game_id: str,
@@ -267,12 +553,15 @@ def accept_invite(
     db_path: Path | str = DEFAULT_DB_PATH,
 ) -> dict[str, Any]:
     """
-    v0.8:
     The invited player accepts by short code.
-    The game becomes ACTIVE immediately, so there is no extra START step.
-    """
 
-    code = normalize_invite_code(invite_code)
+    v0.9.0:
+    timed games start their authoritative server clock at the exact moment
+    the invitation becomes active.
+    """
+    code = normalize_invite_code(
+        invite_code
+    )
 
     if not code:
         raise ValueError(
@@ -280,6 +569,7 @@ def accept_invite(
         )
 
     now = utc_now()
+    clock_now = _clock_now_iso()
 
     with connection(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -301,7 +591,10 @@ def accept_invite(
                 "Invitation code not found"
             )
 
-        if row["status"] == "waiting":
+        if row["status"] in {
+            "waiting",
+            "ready",
+        }:
             conn.execute(
                 """
                 UPDATE games
@@ -310,33 +603,20 @@ def accept_invite(
                     started_at =
                         COALESCE(started_at, ?),
                     status = 'active',
-                    updated_at = ?
+                    updated_at = ?,
+                    clock_started_at =
+                        CASE
+                            WHEN time_control = 'relaxed'
+                            THEN NULL
+                            ELSE ?
+                        END
                 WHERE id = ?
                 """,
                 (
                     now,
                     now,
                     now,
-                    row["id"],
-                ),
-            )
-
-        elif row["status"] == "ready":
-            conn.execute(
-                """
-                UPDATE games
-                SET black_joined_at =
-                        COALESCE(black_joined_at, ?),
-                    started_at =
-                        COALESCE(started_at, ?),
-                    status = 'active',
-                    updated_at = ?
-                WHERE id = ?
-                """,
-                (
-                    now,
-                    now,
-                    now,
+                    clock_now,
                     row["id"],
                 ),
             )
@@ -352,13 +632,17 @@ def accept_invite(
 
         conn.execute("COMMIT")
 
-    game = get_game(row["id"], db_path)
+    game = get_game(
+        row["id"],
+        db_path,
+    )
 
     if not game:
-        raise ValueError("Game not found")
+        raise ValueError(
+            "Game not found"
+        )
 
     return game
-
 
 def mark_black_joined(
     game_id: str,
@@ -478,6 +762,7 @@ def start_game(
     db_path: Path | str = DEFAULT_DB_PATH,
 ) -> dict[str, Any]:
     now = utc_now()
+    clock_now = _clock_now_iso()
 
     with connection(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -489,7 +774,9 @@ def start_game(
 
         if not row:
             conn.execute("ROLLBACK")
-            raise ValueError("Game not found")
+            raise ValueError(
+                "Game not found"
+            )
 
         if row["status"] == "active":
             conn.execute("COMMIT")
@@ -507,25 +794,36 @@ def start_game(
             SET status = 'active',
                 started_at =
                     COALESCE(started_at, ?),
-                updated_at = ?
+                updated_at = ?,
+                clock_started_at =
+                    CASE
+                        WHEN time_control = 'relaxed'
+                        THEN NULL
+                        ELSE ?
+                    END
             WHERE id = ?
             """,
             (
                 now,
                 now,
+                clock_now,
                 game_id,
             ),
         )
 
         conn.execute("COMMIT")
 
-    game = get_game(game_id, db_path)
+    game = get_game(
+        game_id,
+        db_path,
+    )
 
     if not game:
-        raise ValueError("Game not found")
+        raise ValueError(
+            "Game not found"
+        )
 
     return game
-
 
 def get_moves(
     game_id: str,
@@ -550,7 +848,13 @@ def make_move(
     uci: str,
     db_path: Path | str = DEFAULT_DB_PATH,
 ) -> dict[str, Any]:
+    now_dt = _clock_now_dt()
     now = utc_now()
+    clock_now = _clock_now_iso(
+        now_dt
+    )
+
+    timeout_detected = False
 
     with connection(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -562,7 +866,9 @@ def make_move(
 
         if not row:
             conn.execute("ROLLBACK")
-            raise ValueError("Game not found")
+            raise ValueError(
+                "Game not found"
+            )
 
         if row["status"] != "active":
             conn.execute("ROLLBACK")
@@ -570,98 +876,453 @@ def make_move(
                 "Game is not active"
             )
 
-        board = chess.Board(row["fen"])
+        board = chess.Board(
+            row["fen"]
+        )
 
-        try:
-            move = chess.Move.from_uci(uci)
-        except ValueError as exc:
-            conn.execute("ROLLBACK")
-            raise ValueError(
-                "Invalid move"
-            ) from exc
+        turn_role = (
+            "white"
+            if board.turn == chess.WHITE
+            else "black"
+        )
 
-        if move not in board.legal_moves:
-            conn.execute("ROLLBACK")
-            raise ValueError(
-                "Move is no longer legal. "
-                "The other player may have moved."
+        config = clock_config(
+            row["time_control"]
+        )
+
+        if config is not None:
+            base_ms, increment_ms = config
+
+            white_clock_ms = (
+                int(row["white_clock_ms"])
+                if row["white_clock_ms"] is not None
+                else base_ms
             )
 
-        san = board.san(move)
+            black_clock_ms = (
+                int(row["black_clock_ms"])
+                if row["black_clock_ms"] is not None
+                else base_ms
+            )
 
-        ply = conn.execute(
-            """
-            SELECT COUNT(*) AS c
-            FROM moves
-            WHERE game_id = ?
-            """,
-            (game_id,),
-        ).fetchone()["c"] + 1
+            elapsed = _elapsed_ms(
+                row["clock_started_at"],
+                now_dt,
+            )
 
-        board.push(move)
+            if turn_role == "white":
+                remaining_before_move = max(
+                    0,
+                    white_clock_ms - elapsed,
+                )
+            else:
+                remaining_before_move = max(
+                    0,
+                    black_clock_ms - elapsed,
+                )
 
-        status = "active"
-        result = ""
-        finished_at = None
+            if remaining_before_move <= 0:
+                timeout_detected = True
 
-        if board.is_game_over(
-            claim_draw=True
-        ):
-            status = "finished"
-            result = board.result(
+                result = _timeout_result(
+                    turn_role
+                )
+
+                if turn_role == "white":
+                    white_clock_ms = 0
+                else:
+                    black_clock_ms = 0
+
+                conn.execute(
+                    """
+                    UPDATE games
+                    SET status = 'finished',
+                        result = ?,
+                        updated_at = ?,
+                        finished_at = ?,
+                        white_clock_ms = ?,
+                        black_clock_ms = ?,
+                        clock_started_at = NULL,
+                        finish_reason = 'timeout'
+                    WHERE id = ?
+                    """,
+                    (
+                        result,
+                        now,
+                        now,
+                        white_clock_ms,
+                        black_clock_ms,
+                        game_id,
+                    ),
+                )
+
+                conn.execute("COMMIT")
+
+            else:
+                try:
+                    move = chess.Move.from_uci(
+                        uci
+                    )
+                except ValueError as exc:
+                    conn.execute("ROLLBACK")
+                    raise ValueError(
+                        "Invalid move"
+                    ) from exc
+
+                if move not in board.legal_moves:
+                    conn.execute("ROLLBACK")
+                    raise ValueError(
+                        "Move is no longer legal. "
+                        "The other player may have moved."
+                    )
+
+                san = board.san(
+                    move
+                )
+
+                ply = conn.execute(
+                    """
+                    SELECT COUNT(*) AS c
+                    FROM moves
+                    WHERE game_id = ?
+                    """,
+                    (game_id,),
+                ).fetchone()["c"] + 1
+
+                board.push(
+                    move
+                )
+
+                if turn_role == "white":
+                    white_clock_ms = (
+                        remaining_before_move
+                        + increment_ms
+                    )
+                else:
+                    black_clock_ms = (
+                        remaining_before_move
+                        + increment_ms
+                    )
+
+                status = "active"
+                result = ""
+                finished_at = None
+                finish_reason = ""
+                next_clock_started_at = clock_now
+
+                if board.is_game_over(
+                    claim_draw=True
+                ):
+                    status = "finished"
+                    result = board.result(
+                        claim_draw=True
+                    )
+                    finished_at = now
+                    finish_reason = "board"
+                    next_clock_started_at = None
+
+                conn.execute(
+                    """
+                    INSERT INTO moves (
+                        game_id,
+                        ply,
+                        uci,
+                        san,
+                        created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        game_id,
+                        ply,
+                        uci,
+                        san,
+                        now,
+                    ),
+                )
+
+                conn.execute(
+                    """
+                    UPDATE games
+                    SET fen = ?,
+                        status = ?,
+                        result = ?,
+                        updated_at = ?,
+                        finished_at = ?,
+                        white_clock_ms = ?,
+                        black_clock_ms = ?,
+                        clock_started_at = ?,
+                        finish_reason = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        board.fen(),
+                        status,
+                        result,
+                        now,
+                        finished_at,
+                        white_clock_ms,
+                        black_clock_ms,
+                        next_clock_started_at,
+                        finish_reason,
+                        game_id,
+                    ),
+                )
+
+                conn.execute("COMMIT")
+
+        else:
+            # Relaxed mode uses the proven no-clock move path.
+            try:
+                move = chess.Move.from_uci(
+                    uci
+                )
+            except ValueError as exc:
+                conn.execute("ROLLBACK")
+                raise ValueError(
+                    "Invalid move"
+                ) from exc
+
+            if move not in board.legal_moves:
+                conn.execute("ROLLBACK")
+                raise ValueError(
+                    "Move is no longer legal. "
+                    "The other player may have moved."
+                )
+
+            san = board.san(
+                move
+            )
+
+            ply = conn.execute(
+                """
+                SELECT COUNT(*) AS c
+                FROM moves
+                WHERE game_id = ?
+                """,
+                (game_id,),
+            ).fetchone()["c"] + 1
+
+            board.push(
+                move
+            )
+
+            status = "active"
+            result = ""
+            finished_at = None
+            finish_reason = ""
+
+            if board.is_game_over(
                 claim_draw=True
-            )
-            finished_at = now
+            ):
+                status = "finished"
+                result = board.result(
+                    claim_draw=True
+                )
+                finished_at = now
+                finish_reason = "board"
 
-        conn.execute(
-            """
-            INSERT INTO moves (
-                game_id,
-                ply,
-                uci,
-                san,
-                created_at
+            conn.execute(
+                """
+                INSERT INTO moves (
+                    game_id,
+                    ply,
+                    uci,
+                    san,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    game_id,
+                    ply,
+                    uci,
+                    san,
+                    now,
+                ),
             )
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (
-                game_id,
-                ply,
-                uci,
-                san,
-                now,
-            ),
+
+            conn.execute(
+                """
+                UPDATE games
+                SET fen = ?,
+                    status = ?,
+                    result = ?,
+                    updated_at = ?,
+                    finished_at = ?,
+                    clock_started_at = NULL,
+                    finish_reason = ?
+                WHERE id = ?
+                """,
+                (
+                    board.fen(),
+                    status,
+                    result,
+                    now,
+                    finished_at,
+                    finish_reason,
+                    game_id,
+                ),
+            )
+
+            conn.execute("COMMIT")
+
+    if timeout_detected:
+        raise ValueError(
+            "Time expired"
         )
 
-        conn.execute(
-            """
-            UPDATE games
-            SET fen = ?,
-                status = ?,
-                result = ?,
-                updated_at = ?,
-                finished_at = ?
-            WHERE id = ?
-            """,
-            (
-                board.fen(),
-                status,
-                result,
-                now,
-                finished_at,
-                game_id,
-            ),
-        )
-
-        conn.execute("COMMIT")
-
-    game = get_game(game_id, db_path)
+    game = get_game(
+        game_id,
+        db_path,
+    )
 
     if not game:
-        raise ValueError("Game not found")
+        raise ValueError(
+            "Game not found"
+        )
 
     return game
 
+
+def get_clock_state(
+    game_id: str,
+    db_path: Path | str = DEFAULT_DB_PATH,
+) -> dict[str, Any] | None:
+    """
+    Return a synchronized clock snapshot without writing every second.
+
+    Only an actual timeout causes a write. A second locked check prevents
+    a stale clock read from overwriting a move that arrived at the same time.
+    """
+    now_dt = _clock_now_dt()
+
+    with connection(db_path) as conn:
+        row = conn.execute(
+            "SELECT * FROM games WHERE id = ?",
+            (game_id,),
+        ).fetchone()
+
+    if not row:
+        return None
+
+    snapshot = _clock_snapshot(
+        row,
+        now_dt,
+    )
+
+    if (
+        not snapshot["enabled"]
+        or snapshot["status"] != "active"
+    ):
+        return snapshot
+
+    active_color = snapshot[
+        "active_color"
+    ]
+
+    active_ms = (
+        snapshot["white_ms"]
+        if active_color == "white"
+        else snapshot["black_ms"]
+    )
+
+    if (
+        active_ms is None
+        or active_ms > 0
+    ):
+        return snapshot
+
+    with connection(db_path) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+
+        fresh = conn.execute(
+            "SELECT * FROM games WHERE id = ?",
+            (game_id,),
+        ).fetchone()
+
+        if not fresh:
+            conn.execute("ROLLBACK")
+            return None
+
+        fresh_snapshot = _clock_snapshot(
+            fresh,
+            _clock_now_dt(),
+        )
+
+        if (
+            fresh_snapshot["enabled"]
+            and fresh_snapshot["status"] == "active"
+        ):
+            fresh_color = fresh_snapshot[
+                "active_color"
+            ]
+
+            fresh_active_ms = (
+                fresh_snapshot["white_ms"]
+                if fresh_color == "white"
+                else fresh_snapshot["black_ms"]
+            )
+
+            if (
+                fresh_active_ms is not None
+                and fresh_active_ms <= 0
+            ):
+                result = _timeout_result(
+                    fresh_color
+                )
+
+                white_ms = fresh_snapshot[
+                    "white_ms"
+                ]
+                black_ms = fresh_snapshot[
+                    "black_ms"
+                ]
+
+                if fresh_color == "white":
+                    white_ms = 0
+                else:
+                    black_ms = 0
+
+                now_text = utc_now()
+
+                conn.execute(
+                    """
+                    UPDATE games
+                    SET status = 'finished',
+                        result = ?,
+                        updated_at = ?,
+                        finished_at = ?,
+                        white_clock_ms = ?,
+                        black_clock_ms = ?,
+                        clock_started_at = NULL,
+                        finish_reason = 'timeout'
+                    WHERE id = ?
+                    """,
+                    (
+                        result,
+                        now_text,
+                        now_text,
+                        white_ms,
+                        black_ms,
+                        game_id,
+                    ),
+                )
+
+        conn.execute("COMMIT")
+
+    updated = get_game(
+        game_id,
+        db_path,
+    )
+
+    if not updated:
+        return None
+
+    return _clock_snapshot(
+        updated,
+        _clock_now_dt(),
+    )
 
 def legal_moves(
     game_id: str,
