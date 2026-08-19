@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import os
 import json
+import base64
+import hashlib
+import hmac
+import secrets
+import time
 from pathlib import Path
 from html import escape
 from textwrap import dedent
@@ -46,6 +51,7 @@ def secret(name: str, default: str) -> str:
 
 
 APP_SECRET = secret("APP_SECRET", "DEV-ONLY-CHANGE-ME")
+SV_CHESS_CHECKOUT_SECRET = secret("SV_CHESS_CHECKOUT_SECRET", "")
 
 TIME_LABELS = {
     "rapid_15_10": "Rapid — 15 + 10",
@@ -187,7 +193,16 @@ POLISH = {
         "black_clock": 'Black',
         "clock_relaxed": 'Relaxed game — no clock',
         "wins_on_time": '{name} wins on time.',
-        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
+        "premium_title": 'KEEP PLAYING',
+        "winner_offer": "Winner's price",
+        "standard_offer": 'Premium price',
+        "winner_note": 'You won your free game — your Premium Arena price is CHF 5.',
+        "standard_note": 'Your free game is complete. Continue in Premium Arena for CHF 9.',
+        "premium_period": '30 days · unlimited private games · invited friends play free',
+        "checkout_5": 'CONTINUE FOR CHF 5',
+        "checkout_9": 'CONTINUE FOR CHF 9',
+        "checkout_unavailable": 'Premium checkout is not configured yet.',
+        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -228,7 +243,16 @@ POLISH = {
         "black_clock": 'Nero',
         "clock_relaxed": 'Partita Relaxed — senza cronometro',
         "wins_on_time": '{name} vince per tempo.',
-        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
+        "premium_title": 'CONTINUA A GIOCARE',
+        "winner_offer": 'Prezzo vincitore',
+        "standard_offer": 'Prezzo Premium',
+        "winner_note": 'Hai vinto la partita gratuita — il tuo prezzo Premium Arena è CHF 5.',
+        "standard_note": 'La tua partita gratuita è terminata. Continua in Premium Arena per CHF 9.',
+        "premium_period": '30 giorni · partite private illimitate · gli amici invitati giocano gratis',
+        "checkout_5": 'CONTINUA PER CHF 5',
+        "checkout_9": 'CONTINUA PER CHF 9',
+        "checkout_unavailable": 'Il checkout Premium non è ancora configurato.',
+        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -269,7 +293,16 @@ POLISH = {
         "black_clock": 'Schwarz',
         "clock_relaxed": 'Relaxed-Partie — ohne Uhr',
         "wins_on_time": '{name} gewinnt auf Zeit.',
-        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
+        "premium_title": 'WEITERSPIELEN',
+        "winner_offer": 'Siegerpreis',
+        "standard_offer": 'Premium-Preis',
+        "winner_note": 'Du hast dein Gratis-Spiel gewonnen — dein Premium-Arena-Preis beträgt CHF 5.',
+        "standard_note": 'Dein Gratis-Spiel ist beendet. Spiele in der Premium Arena für CHF 9 weiter.',
+        "premium_period": '30 Tage · unbegrenzte private Partien · eingeladene Freunde spielen gratis',
+        "checkout_5": 'WEITERSPIELEN FÜR CHF 5',
+        "checkout_9": 'WEITERSPIELEN FÜR CHF 9',
+        "checkout_unavailable": 'Premium-Checkout ist noch nicht konfiguriert.',
+        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -310,7 +343,16 @@ POLISH = {
         "black_clock": 'Noirs',
         "clock_relaxed": 'Partie Relaxed — sans pendule',
         "wins_on_time": '{name} gagne au temps.',
-        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
+        "premium_title": 'CONTINUER À JOUER',
+        "winner_offer": 'Prix du gagnant',
+        "standard_offer": 'Prix Premium',
+        "winner_note": 'Vous avez gagné votre partie gratuite — votre prix Premium Arena est de CHF 5.',
+        "standard_note": 'Votre partie gratuite est terminée. Continuez dans Premium Arena pour CHF 9.',
+        "premium_period": '30 jours · parties privées illimitées · les amis invités jouent gratuitement',
+        "checkout_5": 'CONTINUER POUR CHF 5',
+        "checkout_9": 'CONTINUER POUR CHF 9',
+        "checkout_unavailable": "Le paiement Premium n'est pas encore configuré.",
+        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -351,7 +393,16 @@ POLISH = {
         "black_clock": 'Negras',
         "clock_relaxed": 'Partida Relaxed — sin reloj',
         "wins_on_time": '{name} gana por tiempo.',
-        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
+        "premium_title": 'SEGUIR JUGANDO',
+        "winner_offer": 'Precio del ganador',
+        "standard_offer": 'Precio Premium',
+        "winner_note": 'Ganaste tu partida gratuita — tu precio Premium Arena es CHF 5.',
+        "standard_note": 'Tu partida gratuita ha terminado. Continúa en Premium Arena por CHF 9.',
+        "premium_period": '30 días · partidas privadas ilimitadas · los amigos invitados juegan gratis',
+        "checkout_5": 'CONTINUAR POR CHF 5',
+        "checkout_9": 'CONTINUAR POR CHF 9',
+        "checkout_unavailable": 'El checkout Premium aún no está configurado.',
+        "footer": 'Stadia Private Chess · v0.9.1 Monetization Bridge',
     },
 }
 
@@ -659,6 +710,39 @@ h1,h2,h3{letter-spacing:-.025em}
     font-weight:900;
     color:var(--sv-ink);
     margin-top:5px;
+}
+
+.sv-premium-offer{
+    border:1px solid #ddd6fe;
+    border-radius:18px;
+    padding:16px;
+    margin:12px 0;
+    background:linear-gradient(135deg,#fff,#f8f5ff);
+}
+.sv-premium-kicker{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.12em;
+    color:#5b3ff0;
+}
+.sv-premium-price{
+    font-size:30px;
+    line-height:1.05;
+    font-weight:950;
+    color:var(--sv-ink);
+    margin-top:6px;
+}
+.sv-premium-note{
+    font-size:14px;
+    color:var(--sv-muted);
+    line-height:1.5;
+    margin-top:7px;
+}
+.sv-premium-period{
+    font-size:12px;
+    color:#667085;
+    font-weight:750;
+    margin-top:8px;
 }
 
 
@@ -1292,6 +1376,84 @@ with st.expander(polish(lang, "save_game_link")):
     st.code(seat_link(seat.game_id, seat.role, lang), language=None)
 
 
+def player_offer(
+    current: dict,
+    role: str,
+) -> str:
+    """
+    Winner gets CHF 5; loser or draw gets CHF 9.
+    The authoritative result already comes from chess_db.
+    """
+    result = str(
+        current.get("result")
+        or ""
+    ).strip()
+
+    if (
+        result == "1-0"
+        and role == "white"
+    ):
+        return "winner"
+
+    if (
+        result == "0-1"
+        and role == "black"
+    ):
+        return "winner"
+
+    return "standard"
+
+
+def signed_checkout_url(
+    game_id: str,
+    role: str,
+    offer: str,
+) -> str:
+    """
+    Create a 15-minute, one-time signed checkout offer for WordPress.
+    The secret itself never appears in the URL.
+    """
+    if not SV_CHESS_CHECKOUT_SECRET:
+        return ""
+
+    payload = {
+        "game_id": str(game_id),
+        "role": str(role),
+        "offer": str(offer),
+        "exp": int(time.time()) + 15 * 60,
+        "jti": secrets.token_urlsafe(18),
+    }
+
+    raw = json.dumps(
+        payload,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+
+    payload_b64 = (
+        base64.urlsafe_b64encode(raw)
+        .rstrip(b"=")
+        .decode("ascii")
+    )
+
+    signature = hmac.new(
+        SV_CHESS_CHECKOUT_SECRET.encode("utf-8"),
+        payload_b64.encode("ascii"),
+        hashlib.sha256,
+    ).hexdigest()
+
+    return (
+        f"{STADIA_PUBLIC_URL}/?"
+        + urlencode(
+            {
+                "sv_chess_pay": "1",
+                "p": payload_b64,
+                "sig": signature,
+            }
+        )
+    )
+
+
 def start_fresh_game() -> None:
     """
     Leave the current signed seat and return to a clean Premium Arena lobby.
@@ -1657,13 +1819,68 @@ def live_board_fragment() -> None:
             </div>
             """)
 
-            if st.button(
-                polish(lang, "play_again"),
-                type="primary",
-                use_container_width=True,
-                key=f"new_game_{seat.game_id}_{seat.role}",
-            ):
-                start_fresh_game()
+            offer = player_offer(
+                current,
+                seat.role,
+            )
+
+            is_winner_offer = (
+                offer == "winner"
+            )
+
+            offer_title = (
+                polish(lang, "winner_offer")
+                if is_winner_offer
+                else polish(lang, "standard_offer")
+            )
+
+            offer_price = (
+                "CHF 5"
+                if is_winner_offer
+                else "CHF 9"
+            )
+
+            offer_note = (
+                polish(lang, "winner_note")
+                if is_winner_offer
+                else polish(lang, "standard_note")
+            )
+
+            render_html(
+                f"""
+                <div class="sv-premium-offer">
+                    <div class="sv-premium-kicker">{escape(polish(lang, 'premium_title'))}</div>
+                    <div class="sv-premium-price">{escape(offer_title)} · {escape(offer_price)}</div>
+                    <div class="sv-premium-note">{escape(offer_note)}</div>
+                    <div class="sv-premium-period">{escape(polish(lang, 'premium_period'))}</div>
+                </div>
+                """
+            )
+
+            checkout_url = signed_checkout_url(
+                seat.game_id,
+                seat.role,
+                offer,
+            )
+
+            if checkout_url:
+                st.link_button(
+                    (
+                        polish(lang, "checkout_5")
+                        if is_winner_offer
+                        else polish(lang, "checkout_9")
+                    ),
+                    checkout_url,
+                    type="primary",
+                    use_container_width=True,
+                )
+            else:
+                st.error(
+                    polish(
+                        lang,
+                        "checkout_unavailable",
+                    )
+                )
 
             st.link_button(
                 polish(lang, "back_stadia"),
