@@ -277,7 +277,9 @@ def init_db(
                 white_clock_ms INTEGER,
                 black_clock_ms INTEGER,
                 clock_started_at TEXT,
-                finish_reason TEXT NOT NULL DEFAULT ''
+                finish_reason TEXT NOT NULL DEFAULT '',
+                white_player_id TEXT NOT NULL DEFAULT '',
+                black_player_id TEXT NOT NULL DEFAULT ''
             );
 
             CREATE TABLE IF NOT EXISTS moves (
@@ -334,6 +336,17 @@ def init_db(
         if "finish_reason" not in columns:
             conn.execute(
                 "ALTER TABLE games ADD COLUMN finish_reason TEXT NOT NULL DEFAULT ''"
+            )
+
+
+        if "white_player_id" not in columns:
+            conn.execute(
+                "ALTER TABLE games ADD COLUMN white_player_id TEXT NOT NULL DEFAULT ''"
+            )
+
+        if "black_player_id" not in columns:
+            conn.execute(
+                "ALTER TABLE games ADD COLUMN black_player_id TEXT NOT NULL DEFAULT ''"
             )
 
         # v0.9.0 migration:
@@ -453,6 +466,7 @@ def create_game(
     black_name: str,
     time_control: str = "rapid_15_10",
     db_path: Path | str = DEFAULT_DB_PATH,
+    white_player_id: str = "",
 ) -> str:
     game_id = uuid.uuid4().hex
     now = utc_now()
@@ -467,6 +481,10 @@ def create_game(
         if config is not None
         else None
     )
+
+    player_id = str(
+        white_player_id or ""
+    ).strip()[:80]
 
     with connection(db_path) as conn:
         invite_code = _generate_invite_code(
@@ -489,10 +507,12 @@ def create_game(
                 white_clock_ms,
                 black_clock_ms,
                 clock_started_at,
-                finish_reason
+                finish_reason,
+                white_player_id,
+                black_player_id
             )
             VALUES (
-                ?, ?, ?, 'waiting', ?, '', ?, ?, ?, ?, ?, ?, NULL, ''
+                ?, ?, ?, 'waiting', ?, '', ?, ?, ?, ?, ?, ?, NULL, '', ?, ''
             )
             """,
             (
@@ -506,6 +526,7 @@ def create_game(
                 invite_code,
                 initial_clock_ms,
                 initial_clock_ms,
+                player_id,
             ),
         )
 
@@ -519,6 +540,65 @@ def get_game(
         row = conn.execute(
             "SELECT * FROM games WHERE id = ?",
             (game_id,),
+        ).fetchone()
+
+        return dict(row) if row else None
+
+
+def get_latest_finished_game_by_player_id(
+    player_id: str,
+    db_path: Path | str = DEFAULT_DB_PATH,
+) -> dict[str, Any] | None:
+    player_id = str(
+        player_id or ""
+    ).strip()
+
+    if not player_id:
+        return None
+
+    with connection(db_path) as conn:
+        row = conn.execute(
+            """
+            SELECT *
+            FROM games
+            WHERE archived = 0
+              AND status = 'finished'
+              AND (
+                    white_player_id = ?
+                 OR black_player_id = ?
+              )
+            ORDER BY COALESCE(finished_at, updated_at) DESC
+            LIMIT 1
+            """,
+            (player_id, player_id),
+        ).fetchone()
+
+        return dict(row) if row else None
+
+
+def get_open_game_by_white_player_id(
+    player_id: str,
+    db_path: Path | str = DEFAULT_DB_PATH,
+) -> dict[str, Any] | None:
+    player_id = str(
+        player_id or ""
+    ).strip()
+
+    if not player_id:
+        return None
+
+    with connection(db_path) as conn:
+        row = conn.execute(
+            """
+            SELECT *
+            FROM games
+            WHERE white_player_id = ?
+              AND archived = 0
+              AND status IN ('waiting', 'ready', 'active')
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (player_id,),
         ).fetchone()
 
         return dict(row) if row else None
@@ -551,6 +631,7 @@ def get_game_by_invite_code(
 def accept_invite(
     invite_code: str,
     db_path: Path | str = DEFAULT_DB_PATH,
+    black_player_id: str = "",
 ) -> dict[str, Any]:
     """
     The invited player accepts by short code.
@@ -570,6 +651,9 @@ def accept_invite(
 
     now = utc_now()
     clock_now = _clock_now_iso()
+    player_id = str(
+        black_player_id or ""
+    ).strip()[:80]
 
     with connection(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -609,6 +693,12 @@ def accept_invite(
                             WHEN time_control = 'relaxed'
                             THEN NULL
                             ELSE ?
+                        END,
+                    black_player_id =
+                        CASE
+                            WHEN TRIM(COALESCE(black_player_id, '')) = ''
+                            THEN ?
+                            ELSE black_player_id
                         END
                 WHERE id = ?
                 """,
@@ -617,6 +707,7 @@ def accept_invite(
                     now,
                     now,
                     clock_now,
+                    player_id,
                     row["id"],
                 ),
             )
