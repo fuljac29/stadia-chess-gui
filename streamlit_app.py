@@ -187,7 +187,7 @@ POLISH = {
         "black_clock": 'Black',
         "clock_relaxed": 'Relaxed game — no clock',
         "wins_on_time": '{name} wins on time.',
-        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
+        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -228,7 +228,7 @@ POLISH = {
         "black_clock": 'Nero',
         "clock_relaxed": 'Partita Relaxed — senza cronometro',
         "wins_on_time": '{name} vince per tempo.',
-        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
+        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -269,7 +269,7 @@ POLISH = {
         "black_clock": 'Schwarz',
         "clock_relaxed": 'Relaxed-Partie — ohne Uhr',
         "wins_on_time": '{name} gewinnt auf Zeit.',
-        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
+        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -310,7 +310,7 @@ POLISH = {
         "black_clock": 'Noirs',
         "clock_relaxed": 'Partie Relaxed — sans pendule',
         "wins_on_time": '{name} gagne au temps.',
-        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
+        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -351,7 +351,7 @@ POLISH = {
         "black_clock": 'Negras',
         "clock_relaxed": 'Partida Relaxed — sin reloj',
         "wins_on_time": '{name} gana por tiempo.',
-        "footer": "Stadia Private Chess · v0.9.0 Chess Clock",
+        "footer": "Stadia Private Chess · v0.9.0.1 New Game Reset",
     },
 }
 
@@ -1292,6 +1292,32 @@ with st.expander(polish(lang, "save_game_link")):
     st.code(seat_link(seat.game_id, seat.role, lang), language=None)
 
 
+def start_fresh_game() -> None:
+    """
+    Leave the current signed seat and return to a clean Premium Arena lobby.
+
+    This changes only Streamlit navigation/session state. It does not modify
+    the finished game, chess engine, database moves, or board component.
+    """
+    lang_value = lang
+
+    for key in list(st.session_state.keys()):
+        if (
+            key == "pending_invite_code"
+            or key == "chess_move_error"
+            or key.startswith("stadia_board_nonce_")
+            or key.startswith("stadia_board_v087_")
+        ):
+            st.session_state.pop(
+                key,
+                None,
+            )
+
+    st.query_params.clear()
+    st.query_params["lang"] = lang_value
+    st.rerun()
+
+
 def format_clock_ms(
     value: int | None,
 ) -> str:
@@ -1631,12 +1657,14 @@ def live_board_fragment() -> None:
             </div>
             """)
 
-            st.link_button(
+            if st.button(
                 polish(lang, "play_again"),
-                STADIA_PUBLIC_URL + "/",
                 type="primary",
                 use_container_width=True,
-            )
+                key=f"new_game_{seat.game_id}_{seat.role}",
+            ):
+                start_fresh_game()
+
             st.link_button(
                 polish(lang, "back_stadia"),
                 "https://stadiaorg.com/",
