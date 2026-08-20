@@ -219,7 +219,7 @@ POLISH = {
         "existing_free_game": 'You already have a free game in progress.',
         "open_existing": 'OPEN MY CURRENT GAME',
         "premium_play_again": 'PLAY ANOTHER GAME',
-        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
+        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -281,7 +281,7 @@ POLISH = {
         "existing_free_game": 'Hai già una partita gratuita in corso.',
         "open_existing": 'APRI LA PARTITA IN CORSO',
         "premium_play_again": "GIOCA UN'ALTRA PARTITA",
-        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
+        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -343,7 +343,7 @@ POLISH = {
         "existing_free_game": 'Du hast bereits eine kostenlose Partie laufen.',
         "open_existing": 'MEINE AKTUELLE PARTIE ÖFFNEN',
         "premium_play_again": 'NOCH EINE PARTIE',
-        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
+        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -405,7 +405,7 @@ POLISH = {
         "existing_free_game": 'Vous avez déjà une partie gratuite en cours.',
         "open_existing": 'OUVRIR MA PARTIE EN COURS',
         "premium_play_again": 'JOUER UNE AUTRE PARTIE',
-        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
+        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -467,7 +467,7 @@ POLISH = {
         "existing_free_game": 'Ya tienes una partida gratuita en curso.',
         "open_existing": 'ABRIR MI PARTIDA ACTUAL',
         "premium_play_again": 'JUGAR OTRA PARTIDA',
-        "footer": 'Stadia Private Chess · v0.9.2 Premium Access',
+        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
     },
 }
 
@@ -633,7 +633,8 @@ h1,h2,h3{letter-spacing:-.025em}
 .sv-section-intro{
     color:var(--sv-muted);
     margin:-4px 0 14px;
-    line-height:1.55;
+    line-height:1.65;
+    font-size:17px;
 }
 .sv-code-card{
     border:1px solid #ddd6fe;
@@ -650,17 +651,18 @@ h1,h2,h3{letter-spacing:-.025em}
     color:var(--sv-ink);
     margin:7px 0 8px;
 }
-.sv-code-note{color:var(--sv-muted);font-size:14px;margin-top:8px}
+.sv-code-note{color:var(--sv-muted);font-size:16px;line-height:1.6;margin-top:8px}
 .sv-invite-title{
-    font-size:20px;
+    font-size:24px;
     font-weight:900;
     color:var(--sv-ink);
-    margin:5px 0 2px;
+    margin:5px 0 4px;
+    line-height:1.35;
 }
 .sv-invite-sub{
     color:var(--sv-muted);
-    font-size:14px;
-    line-height:1.55;
+    font-size:16px;
+    line-height:1.65;
 }
 .sv-invite-steps{
     border:1px solid var(--sv-line);
@@ -672,19 +674,22 @@ h1,h2,h3{letter-spacing:-.025em}
 .sv-invite-steps-title{
     font-weight:900;
     color:var(--sv-ink);
-    margin-bottom:9px;
+    margin-bottom:10px;
+    font-size:17px;
 }
 .sv-invite-step{
     display:flex;
-    gap:10px;
+    gap:12px;
     align-items:flex-start;
     color:var(--sv-muted);
-    font-size:14px;
-    margin:7px 0;
+    font-size:16px;
+    line-height:1.6;
+    margin:9px 0;
 }
 .sv-step-num{
-    flex:0 0 24px;
-    height:24px;
+    flex:0 0 28px;
+    width:28px;
+    height:28px;
     border-radius:999px;
     background:#eeeaff;
     color:#5038c8;
@@ -692,7 +697,7 @@ h1,h2,h3{letter-spacing:-.025em}
     align-items:center;
     justify-content:center;
     font-weight:900;
-    font-size:12px;
+    font-size:14px;
 }
 .sv-invite-meta{
     display:flex;
@@ -702,11 +707,11 @@ h1,h2,h3{letter-spacing:-.025em}
 }
 .sv-meta-pill{
     display:inline-block;
-    padding:7px 10px;
+    padding:8px 12px;
     border-radius:999px;
     background:#f5f4fb;
     color:#475467;
-    font-size:12px;
+    font-size:14px;
     font-weight:800;
 }
 
@@ -873,7 +878,11 @@ h1,h2,h3{letter-spacing:-.025em}
     .sv-clock-time{font-size:27px}
 }
 
-.sv-access-card{border:1px solid var(--sv-line);border-radius:18px;padding:15px 17px;background:#fff;margin:8px 0 15px}.sv-access-card.premium{border-color:#cfc5ff;background:linear-gradient(135deg,#fff,#f6f3ff)}.sv-access-card.locked{border-color:#f1d8a8;background:#fffaf0}.sv-access-label{font-size:11px;font-weight:900;letter-spacing:.12em;color:#5b3ff0}.sv-access-text{font-size:14px;line-height:1.55;color:var(--sv-muted);margin-top:5px}
+.sv-access-card{border:1px solid var(--sv-line);border-radius:18px;padding:15px 17px;background:#fff;margin:8px 0 15px}
+.sv-access-card.premium{border-color:#cfc5ff;background:linear-gradient(135deg,#fff,#f6f3ff)}
+.sv-access-card.locked{border-color:#f1d8a8;background:#fffaf0}
+.sv-access-label{font-size:12px;font-weight:900;letter-spacing:.12em;color:#5b3ff0}
+.sv-access-text{font-size:16px;line-height:1.65;color:var(--sv-muted);margin-top:5px}
 div.stButton>button,
 div[data-testid="stFormSubmitButton"]>button{
     min-height:54px;
@@ -930,6 +939,40 @@ div[data-testid="stExpander"] summary{
     font-size:13px;
 }
 code{word-break:break-all;white-space:pre-wrap}
+
+/* PRE-GAME TYPOGRAPHY ONLY */
+div[data-testid="stTextInput"] label,
+div[data-testid="stSelectbox"] label{
+    font-size:16px!important;
+    font-weight:800!important;
+}
+
+div[data-testid="stTextInput"] label p,
+div[data-testid="stSelectbox"] label p{
+    font-size:16px!important;
+    font-weight:800!important;
+    line-height:1.45!important;
+}
+
+div[data-testid="stTextInput"] input{
+    font-size:18px!important;
+    min-height:54px!important;
+    line-height:1.4!important;
+}
+
+div[data-testid="stTextInput"] input::placeholder{
+    font-size:16px!important;
+}
+
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div{
+    font-size:17px!important;
+    min-height:54px!important;
+}
+
+div[data-testid="stForm"] [data-testid="stMarkdownContainer"] p{
+    font-size:16px!important;
+    line-height:1.6!important;
+}
 
 @media(max-width:760px){
     .sv-hero{padding:22px}
