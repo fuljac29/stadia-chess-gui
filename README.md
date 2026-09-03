@@ -1,6 +1,10 @@
-# Stadia Chess GUI v0.2
+# Stadia Chess GUI v1.0 — Traditional + 10×8
 
-A clean Streamlit prototype for Stadia Private Chess.
+A multilingual Streamlit application for remote private chess on Stadia.
+
+The host can choose either traditional chess or **Stadia 10×8 Counterintelligence Chess**. Both variants use the same secure invitation, clocks, remote synchronization, first-free-game and Premium Arena access flow. Invited partners play free.
+
+The 10×8 rules and the pending-patent notice are available in English, Italian, German, French and Spanish.
 
 ## Goal of v0.2
 
@@ -21,9 +25,11 @@ The player role is **not decided by localStorage/sessionStorage**. It is encoded
 - `streamlit_app.py` — public player GUI.
 - `pages/1_Admin.py` — password-protected administration GUI.
 - `chess_db.py` — game and move storage.
+- `counter_chess.py` — authoritative 10×8 rules engine.
 - `chess_tokens.py` — permanent White/Black signed links.
 - `chess_board.py` — board rendering and legal move list.
 - `i18n.py` — EN / IT / DE / FR / ES core interface text.
+- `counter_board_frontend/` — responsive 10×8 board and the 3D pieces.
 - `.streamlit/config.toml` — Streamlit appearance.
 - `.streamlit/secrets.toml.example` — secret template.
 - `requirements.txt` — Python dependencies.
@@ -64,16 +70,27 @@ ADMIN_PASSWORD = "a-strong-admin-password"
 
 ## Important: database persistence
 
-v0.1 uses SQLite because it is the fastest way to test the GUI and the White/Black link architecture.
+Without configuration the application uses SQLite for local development and compatibility.
+
+For permanent storage, add a PostgreSQL connection string to Streamlit Secrets:
+
+```toml
+DATABASE_URL = "postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+```
+
+On the next start, the application creates or updates the PostgreSQL tables automatically. Never commit this value to GitHub.
+
+To copy an existing SQLite database one time, run `migrate_sqlite_to_postgres.py` with `DATABASE_URL` set in the environment. The migration does not delete the SQLite source.
 
 For a real public launch, move the database to durable PostgreSQL/Supabase before accepting real users. Streamlit Community Cloud does not guarantee persistence of local files.
 
-## WooCommerce
+## Premium Arena
 
-Not connected in v0.1.
+The application uses the existing Stadia WordPress access and completion endpoints. The first game is free; afterwards the existing CHF 5 winner offer or CHF 9 standard offer grants 30 days of unlimited private games. The invited partner does not pay.
 
-WooCommerce will be integrated only after the core flow (create -> invite -> play -> close -> return) is stable.
-The future integration should grant the right to create games; WooCommerce should not control White/Black identity.
+## Upgrade compatibility
+
+`init_db()` adds the `variant` column automatically. Existing database games are preserved and classified as traditional chess.
 
 ## v0.2 flow change
 

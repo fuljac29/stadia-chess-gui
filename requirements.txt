@@ -2,3 +2,4 @@ streamlit>=1.49,<2
 python-chess>=1.999
 streamlit-image-coordinates==0.4.1
 Pillow>=10
+psycopg[binary]>=3.2,<4

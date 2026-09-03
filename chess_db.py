@@ -13,10 +13,18 @@ from typing import Any
 import chess
 import counter_chess
 
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:  # SQLite remains available for local development.
+    psycopg = None
+    dict_row = None
+
 
 DEFAULT_DB_PATH = Path(
     os.getenv("STADIA_DB_PATH", "data/stadia_chess.db")
 )
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 INVITE_CODE_LENGTH = 6
@@ -231,6 +239,25 @@ def normalize_invite_code(value: str) -> str:
 def connection(
     db_path: Path | str = DEFAULT_DB_PATH
 ):
+    use_postgres = bool(DATABASE_URL) and Path(db_path) == DEFAULT_DB_PATH
+
+    if use_postgres:
+        if psycopg is None:
+            raise RuntimeError(
+                "DATABASE_URL is configured but psycopg is not installed"
+            )
+        raw_conn = psycopg.connect(
+            DATABASE_URL,
+            autocommit=True,
+            row_factory=dict_row,
+        )
+        conn = PostgresCompatibilityConnection(raw_conn)
+        try:
+            yield conn
+        finally:
+            raw_conn.close()
+        return
+
     db_path = Path(db_path)
     db_path.parent.mkdir(
         parents=True,
@@ -251,6 +278,103 @@ def connection(
         yield conn
     finally:
         conn.close()
+
+
+class PostgresCompatibilityConnection:
+    """Small adapter preserving the existing SQLite-style query interface."""
+
+    def __init__(self, connection) -> None:
+        self.connection = connection
+
+    @staticmethod
+    def _sql(statement: str) -> str:
+        normalized = statement.strip()
+        if normalized.upper() == "BEGIN IMMEDIATE":
+            return "BEGIN"
+        return statement.replace("?", "%s")
+
+    def execute(self, statement: str, parameters=()):
+        return self.connection.execute(self._sql(statement), parameters)
+
+
+def _init_postgres(db_path: Path | str = DEFAULT_DB_PATH) -> None:
+    with connection(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS games (
+                id TEXT PRIMARY KEY,
+                white_name TEXT NOT NULL,
+                black_name TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'waiting',
+                fen TEXT NOT NULL,
+                result TEXT NOT NULL DEFAULT '',
+                time_control TEXT NOT NULL DEFAULT 'rapid_15_10',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                black_joined_at TEXT,
+                started_at TEXT,
+                finished_at TEXT,
+                archived INTEGER NOT NULL DEFAULT 0,
+                premium_source TEXT NOT NULL DEFAULT '',
+                premium_until TEXT NOT NULL DEFAULT '',
+                invite_code TEXT,
+                white_clock_ms BIGINT,
+                black_clock_ms BIGINT,
+                clock_started_at TEXT,
+                finish_reason TEXT NOT NULL DEFAULT '',
+                white_player_id TEXT NOT NULL DEFAULT '',
+                black_player_id TEXT NOT NULL DEFAULT '',
+                variant TEXT NOT NULL DEFAULT 'classic'
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS moves (
+                id BIGSERIAL PRIMARY KEY,
+                game_id TEXT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+                ply INTEGER NOT NULL,
+                uci TEXT NOT NULL,
+                san TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                position_key TEXT NOT NULL DEFAULT '',
+                UNIQUE(game_id, ply)
+            )
+            """
+        )
+        migrations = (
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS invite_code TEXT",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS white_clock_ms BIGINT",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS black_clock_ms BIGINT",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS clock_started_at TEXT",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS finish_reason TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS white_player_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS black_player_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE games ADD COLUMN IF NOT EXISTS variant TEXT NOT NULL DEFAULT 'classic'",
+            "ALTER TABLE moves ADD COLUMN IF NOT EXISTS position_key TEXT NOT NULL DEFAULT ''",
+        )
+        for statement in migrations:
+            conn.execute(statement)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_games_status_updated ON games(status, updated_at DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_moves_game ON moves(game_id, ply)"
+        )
+        conn.execute(
+            "UPDATE games SET invite_code = NULL WHERE TRIM(COALESCE(invite_code, '')) = ''"
+        )
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_games_invite_code ON games(invite_code) WHERE invite_code IS NOT NULL"
+        )
+        rows = conn.execute(
+            "SELECT id FROM games WHERE invite_code IS NULL"
+        ).fetchall()
+        for row in rows:
+            conn.execute(
+                "UPDATE games SET invite_code = ? WHERE id = ?",
+                (_generate_invite_code(conn), row["id"]),
+            )
 
 
 def _generate_invite_code(
@@ -278,6 +402,9 @@ def _generate_invite_code(
 def init_db(
     db_path: Path | str = DEFAULT_DB_PATH
 ) -> None:
+    if DATABASE_URL and Path(db_path) == DEFAULT_DB_PATH:
+        _init_postgres(db_path)
+        return
     with connection(db_path) as conn:
         conn.executescript(
             """
