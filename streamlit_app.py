@@ -99,6 +99,49 @@ DIRECT_INVITE_LABELS = {
     "ES": ("COPIAR ENLACE DIRECTO DE INVITACIÓN", "Enlace de invitación copiado"),
 }
 
+GAME_CHOICE_TEXT = {
+    "EN": {
+        "title": "CHOOSE YOUR CHESS GAME",
+        "classic": "Traditional Chess",
+        "classic_help": "The familiar 8×8 game with standard pieces and rules.",
+        "counter": "New 10×8 Counterintelligence Chess",
+        "counter_help": "A 10×8 board with the Transparent Bishop (T) and Interceptor (I). T moves diagonally up to 3 squares and may pass over one piece. I moves one square in every direction and neutralizes an adjacent enemy T.",
+        "prompt": "Which game do you want to play?",
+    },
+    "IT": {
+        "title": "SCEGLI IL TIPO DI SCACCHI",
+        "classic": "Scacchi tradizionali",
+        "classic_help": "La classica partita 8×8 con figure e regole tradizionali.",
+        "counter": "Nuovi Scacchi 10×8 Controspionaggio",
+        "counter_help": "Scacchiera 10×8 con Alfiere Trasparente (T) e Intercettore (I). T si muove in diagonale fino a 3 caselle e può oltrepassare un pezzo. I si muove di una casella in ogni direzione e neutralizza un T nemico adiacente.",
+        "prompt": "Con quale gioco vuoi giocare?",
+    },
+    "DE": {
+        "title": "SCHACHSPIEL AUSWÄHLEN",
+        "classic": "Traditionelles Schach",
+        "classic_help": "Das bekannte 8×8-Spiel mit klassischen Figuren und Regeln.",
+        "counter": "Neues 10×8-Gegenspionage-Schach",
+        "counter_help": "10×8-Brett mit Transparentem Läufer (T) und Abfangfigur (I). T zieht diagonal bis zu 3 Felder und darf eine Figur überspringen. I zieht ein Feld in jede Richtung und neutralisiert einen angrenzenden gegnerischen T.",
+        "prompt": "Welches Spiel möchtest du spielen?",
+    },
+    "FR": {
+        "title": "CHOISISSEZ VOTRE JEU D’ÉCHECS",
+        "classic": "Échecs traditionnels",
+        "classic_help": "Le jeu classique 8×8 avec les pièces et règles habituelles.",
+        "counter": "Nouveaux échecs 10×8 de contre-espionnage",
+        "counter_help": "Échiquier 10×8 avec le Fou transparent (T) et l’Intercepteur (I). T avance en diagonale jusqu’à 3 cases et peut franchir une pièce. I avance d’une case dans toutes les directions et neutralise un T adverse adjacent.",
+        "prompt": "À quel jeu voulez-vous jouer ?",
+    },
+    "ES": {
+        "title": "ELIGE EL TIPO DE AJEDREZ",
+        "classic": "Ajedrez tradicional",
+        "classic_help": "El juego clásico 8×8 con piezas y reglas tradicionales.",
+        "counter": "Nuevo ajedrez 10×8 de contraespionaje",
+        "counter_help": "Tablero 10×8 con Alfil transparente (T) e Interceptor (I). T se mueve en diagonal hasta 3 casillas y puede atravesar una pieza. I se mueve una casilla en cualquier dirección y neutraliza una T enemiga adyacente.",
+        "prompt": "¿A qué juego quieres jugar?",
+    },
+}
+
 UI = {
     "EN": {
         "create_title": "Invite a friend", "your_name": "Your name", "friend_name": "Friend's name",
@@ -939,6 +982,22 @@ div[data-testid="stForm"]{
     border-radius:20px;
     background:#fff;
 }
+[data-testid="stRadio"] div[role="radiogroup"]{
+    gap:14px;
+}
+[data-testid="stRadio"] div[role="radiogroup"] label{
+    flex:1 1 260px;
+    min-height:58px;
+    padding:12px 16px;
+    border:2px solid #dcd7ff;
+    border-radius:14px;
+    background:#faf9ff;
+    align-items:center;
+}
+[data-testid="stRadio"] div[role="radiogroup"] label p{
+    font-size:16px!important;
+    font-weight:800!important;
+}
 
 div[data-testid="stAlert"]{
     font-size:15px!important;
@@ -1370,6 +1429,22 @@ if not seat:
 
     st.subheader(ui(lang, "create_title"))
 
+    choice_text = GAME_CHOICE_TEXT.get(lang, GAME_CHOICE_TEXT["EN"])
+    render_html(f"""
+    <div class="sv-access-card premium">
+      <div class="sv-access-label">{escape(choice_text['title'])}</div>
+      <div class="sv-access-text"><strong>♟ {escape(choice_text['classic'])}</strong><br>{escape(choice_text['classic_help'])}</div>
+      <div class="sv-access-text" style="margin-top:12px"><strong>♜ {escape(choice_text['counter'])}</strong><br>{escape(choice_text['counter_help'])}</div>
+    </div>
+    """)
+    selected_variant = st.radio(
+        choice_text["prompt"],
+        options=[db.VARIANT_CLASSIC, db.VARIANT_COUNTER],
+        format_func=lambda value: variant_label(lang, value),
+        horizontal=True,
+        key="new_game_variant",
+    )
+
     access_state = get_access_state(player_id) if player_id else None
 
     # If the player closed the page immediately after a finished game,
@@ -1426,17 +1501,12 @@ if not seat:
             white_name = st.text_input(ui(lang, "your_name"))
             friend_name = st.text_input(ui(lang, "friend_name"))
             time_control = st.selectbox(ui(lang, "time_control"), options=list(TIME_LABELS.keys()), format_func=lambda x: TIME_LABELS[x])
-            variant = st.selectbox(
-                VARIANT_TEXT.get(lang, VARIANT_TEXT["EN"])[0],
-                options=[db.VARIANT_CLASSIC, db.VARIANT_COUNTER],
-                format_func=lambda value: variant_label(lang, value),
-            )
             submitted = st.form_submit_button(ui(lang, "create_button"), type="primary", use_container_width=True)
         if submitted:
             if not white_name.strip() or not friend_name.strip():
                 st.error(ui(lang, "missing_names"))
             else:
-                gid = db.create_game(white_name=white_name.strip(), black_name=friend_name.strip(), time_control=time_control, white_player_id=player_id, variant=variant)
+                gid = db.create_game(white_name=white_name.strip(), black_name=friend_name.strip(), time_control=time_control, white_player_id=player_id, variant=selected_variant)
                 st.query_params["seat"] = make_seat_token(gid, "white", APP_SECRET)
                 st.query_params["lang"] = lang
                 st.query_params["player"] = player_id
