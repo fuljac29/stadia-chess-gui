@@ -31,6 +31,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Read the database connection explicitly from Streamlit Secrets. Root-level
+# secrets are normally mirrored to environment variables, but assigning it
+# here makes the PostgreSQL selection deterministic on Community Cloud.
+try:
+    configured_database_url = str(
+        st.secrets.get("DATABASE_URL", "")
+    ).strip()
+except Exception:
+    configured_database_url = ""
+
+if configured_database_url:
+    db.DATABASE_URL = configured_database_url
+
 db.init_db()
 
 STADIA_PUBLIC_URL = "https://stadiaorg.com/stadia-premium-arena/".rstrip("/")
