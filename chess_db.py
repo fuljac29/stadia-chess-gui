@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import chess
+import counter_chess
 
 
 DEFAULT_DB_PATH = Path(
@@ -25,6 +26,31 @@ CLOCK_CONTROLS: dict[str, tuple[int, int] | None] = {
     "blitz_5_3": (5 * 60_000, 3_000),
     "relaxed": None,
 }
+
+VARIANT_CLASSIC = "classic"
+VARIANT_COUNTER = "counter_10x8"
+
+
+def normalize_variant(value: str | None) -> str:
+    return VARIANT_COUNTER if value == VARIANT_COUNTER else VARIANT_CLASSIC
+
+
+def board_for_variant(variant: str | None, fen: str | None = None):
+    if normalize_variant(variant) == VARIANT_COUNTER:
+        return counter_chess.Board.from_fen(fen) if fen else counter_chess.Board.initial()
+    return chess.Board(fen) if fen else chess.Board()
+
+
+def board_from_game(game: sqlite3.Row | dict[str, Any]):
+    keys = game.keys()
+    variant = game["variant"] if "variant" in keys else VARIANT_CLASSIC
+    return board_for_variant(variant, game["fen"])
+
+
+def move_for_board(board, uci: str):
+    if isinstance(board, counter_chess.Board):
+        return board.find_legal_move(uci)
+    return chess.Move.from_uci(uci)
 
 
 def clock_config(
@@ -111,9 +137,7 @@ def _clock_snapshot(
         row["time_control"]
     )
 
-    board = chess.Board(
-        row["fen"]
-    )
+    board = board_from_game(row)
 
     active_color = (
         "white"
@@ -280,6 +304,7 @@ def init_db(
                 finish_reason TEXT NOT NULL DEFAULT '',
                 white_player_id TEXT NOT NULL DEFAULT '',
                 black_player_id TEXT NOT NULL DEFAULT ''
+                ,variant TEXT NOT NULL DEFAULT 'classic'
             );
 
             CREATE TABLE IF NOT EXISTS moves (
@@ -289,6 +314,7 @@ def init_db(
                 uci TEXT NOT NULL,
                 san TEXT NOT NULL,
                 created_at TEXT NOT NULL,
+                position_key TEXT NOT NULL DEFAULT '',
                 UNIQUE(game_id, ply),
                 FOREIGN KEY(game_id)
                     REFERENCES games(id)
@@ -347,6 +373,20 @@ def init_db(
         if "black_player_id" not in columns:
             conn.execute(
                 "ALTER TABLE games ADD COLUMN black_player_id TEXT NOT NULL DEFAULT ''"
+            )
+
+        if "variant" not in columns:
+            conn.execute(
+                "ALTER TABLE games ADD COLUMN variant TEXT NOT NULL DEFAULT 'classic'"
+            )
+
+        move_columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(moves)").fetchall()
+        }
+        if "position_key" not in move_columns:
+            conn.execute(
+                "ALTER TABLE moves ADD COLUMN position_key TEXT NOT NULL DEFAULT ''"
             )
 
         # v0.9.0 migration:
@@ -467,10 +507,12 @@ def create_game(
     time_control: str = "rapid_15_10",
     db_path: Path | str = DEFAULT_DB_PATH,
     white_player_id: str = "",
+    variant: str = VARIANT_CLASSIC,
 ) -> str:
     game_id = uuid.uuid4().hex
     now = utc_now()
-    board = chess.Board()
+    variant = normalize_variant(variant)
+    board = board_for_variant(variant)
 
     config = clock_config(
         time_control
@@ -510,9 +552,10 @@ def create_game(
                 finish_reason,
                 white_player_id,
                 black_player_id
+                ,variant
             )
             VALUES (
-                ?, ?, ?, 'waiting', ?, '', ?, ?, ?, ?, ?, ?, NULL, '', ?, ''
+                ?, ?, ?, 'waiting', ?, '', ?, ?, ?, ?, ?, ?, NULL, '', ?, '', ?
             )
             """,
             (
@@ -527,6 +570,7 @@ def create_game(
                 initial_clock_ms,
                 initial_clock_ms,
                 player_id,
+                variant,
             ),
         )
 
@@ -967,9 +1011,7 @@ def make_move(
                 "Game is not active"
             )
 
-        board = chess.Board(
-            row["fen"]
-        )
+        board = board_from_game(row)
 
         turn_role = (
             "white"
@@ -1051,9 +1093,7 @@ def make_move(
 
             else:
                 try:
-                    move = chess.Move.from_uci(
-                        uci
-                    )
+                    move = move_for_board(board, uci)
                 except ValueError as exc:
                     conn.execute("ROLLBACK")
                     raise ValueError(
@@ -1119,9 +1159,10 @@ def make_move(
                         ply,
                         uci,
                         san,
-                        created_at
+                        created_at,
+                        position_key
                     )
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
                         game_id,
@@ -1129,6 +1170,7 @@ def make_move(
                         uci,
                         san,
                         now,
+                        board.position_key() if hasattr(board, "position_key") else " ".join(board.fen().split()[:4]),
                     ),
                 )
 
@@ -1165,9 +1207,7 @@ def make_move(
         else:
             # Relaxed mode uses the proven no-clock move path.
             try:
-                move = chess.Move.from_uci(
-                    uci
-                )
+                move = move_for_board(board, uci)
             except ValueError as exc:
                 conn.execute("ROLLBACK")
                 raise ValueError(
@@ -1220,9 +1260,10 @@ def make_move(
                     ply,
                     uci,
                     san,
-                    created_at
+                    created_at,
+                    position_key
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     game_id,
@@ -1230,6 +1271,7 @@ def make_move(
                     uci,
                     san,
                     now,
+                    board.position_key() if hasattr(board, "position_key") else " ".join(board.fen().split()[:4]),
                 ),
             )
 
@@ -1427,9 +1469,7 @@ def legal_moves(
     if not game:
         return []
 
-    board = chess.Board(
-        game["fen"]
-    )
+    board = board_from_game(game)
 
     items = []
 

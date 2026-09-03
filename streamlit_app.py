@@ -46,6 +46,11 @@ stadia_chess_board = components.declare_component(
     "stadia_chess_board_v087",
     path=str(CHESS_BOARD_FRONTEND),
 )
+COUNTER_BOARD_FRONTEND = Path(__file__).parent / "counter_board_frontend"
+stadia_counter_board = components.declare_component(
+    "stadia_counter_board_v100",
+    path=str(COUNTER_BOARD_FRONTEND),
+)
 
 
 def secret(name: str, default: str) -> str:
@@ -62,6 +67,28 @@ TIME_LABELS = {
     "rapid_15_10": "Rapid — 15 + 10",
     "blitz_5_3": "Blitz — 5 + 3",
     "relaxed": "Relaxed — no clock",
+}
+
+VARIANT_TEXT = {
+    "EN": ("Game", "Traditional chess", "New 10×8 Counterintelligence Chess"),
+    "IT": ("Gioco", "Scacchi tradizionali", "Nuovi Scacchi 10×8 Controspionaggio"),
+    "DE": ("Spiel", "Traditionelles Schach", "Neues 10×8-Gegenspionage-Schach"),
+    "FR": ("Jeu", "Échecs traditionnels", "Nouveaux échecs 10×8 de contre-espionnage"),
+    "ES": ("Juego", "Ajedrez tradicional", "Nuevo ajedrez 10×8 de contraespionaje"),
+}
+
+
+def variant_label(lang: str, value: str) -> str:
+    labels = VARIANT_TEXT.get(lang, VARIANT_TEXT["EN"])
+    return labels[2] if value == db.VARIANT_COUNTER else labels[1]
+
+
+COUNTER_RULES = {
+    "EN": "T · Transparent Bishop: moves diagonally up to 3 squares and may pass over one piece, leaving it on the board. I · Interceptor: moves one square in any direction; when adjacent to an enemy T, it neutralizes its ability to pass over pieces. Patent protection: the official patent application has been filed and is pending (Patent Pending).",
+    "IT": "T · Alfiere Trasparente: si muove in diagonale fino a 3 caselle e può oltrepassare un solo pezzo, lasciandolo sulla scacchiera. I · Intercettore: si muove di una casella in ogni direzione; quando è adiacente a un T nemico ne neutralizza la capacità di attraversare i pezzi. Protezione brevettuale: la domanda ufficiale di brevetto è stata depositata ed è attualmente pendente (Patent Pending).",
+    "DE": "T · Transparenter Läufer: zieht diagonal bis zu 3 Felder und darf eine Figur überspringen, die auf dem Brett bleibt. I · Abfangfigur: zieht ein Feld in jede Richtung; steht sie neben einem gegnerischen T, neutralisiert sie dessen Fähigkeit, Figuren zu überspringen. Patentschutz: Die offizielle Patentanmeldung wurde eingereicht und ist anhängig (Patent Pending).",
+    "FR": "T · Fou transparent : se déplace en diagonale jusqu’à 3 cases et peut franchir une pièce, qui reste sur l’échiquier. I · Intercepteur : se déplace d’une case dans toutes les directions ; adjacent à un T adverse, il neutralise sa capacité à franchir les pièces. Protection par brevet : la demande officielle a été déposée et est en instance (Patent Pending).",
+    "ES": "T · Alfil transparente: se mueve en diagonal hasta 3 casillas y puede atravesar una pieza, que permanece en el tablero. I · Interceptor: se mueve una casilla en cualquier dirección; junto a una T enemiga neutraliza su capacidad de atravesar piezas. Protección de patente: la solicitud oficial ha sido presentada y está pendiente (Patent Pending).",
 }
 
 UI = {
@@ -1260,6 +1287,7 @@ if not seat:
             <div class="sv-invite-meta">
             <span class="sv-meta-pill">{escape(polish(lang, 'you_will_play'))}: {escape(str(tr(lang, 'black')))}</span>
             <span class="sv-meta-pill">{escape(ui(lang, 'time_control'))}: {escape(time_label)}</span>
+            <span class="sv-meta-pill">{escape(variant_label(lang, found_game.get('variant', db.VARIANT_CLASSIC)))}</span>
             </div>
             <p class="sv-code-note">{escape(ui(lang, 'accept_question'))}</p>
             </div>
@@ -1384,12 +1412,17 @@ if not seat:
             white_name = st.text_input(ui(lang, "your_name"))
             friend_name = st.text_input(ui(lang, "friend_name"))
             time_control = st.selectbox(ui(lang, "time_control"), options=list(TIME_LABELS.keys()), format_func=lambda x: TIME_LABELS[x])
+            variant = st.selectbox(
+                VARIANT_TEXT.get(lang, VARIANT_TEXT["EN"])[0],
+                options=[db.VARIANT_CLASSIC, db.VARIANT_COUNTER],
+                format_func=lambda value: variant_label(lang, value),
+            )
             submitted = st.form_submit_button(ui(lang, "create_button"), type="primary", use_container_width=True)
         if submitted:
             if not white_name.strip() or not friend_name.strip():
                 st.error(ui(lang, "missing_names"))
             else:
-                gid = db.create_game(white_name=white_name.strip(), black_name=friend_name.strip(), time_control=time_control, white_player_id=player_id)
+                gid = db.create_game(white_name=white_name.strip(), black_name=friend_name.strip(), time_control=time_control, white_player_id=player_id, variant=variant)
                 st.query_params["seat"] = make_seat_token(gid, "white", APP_SECRET)
                 st.query_params["lang"] = lang
                 st.query_params["player"] = player_id
@@ -1844,8 +1877,8 @@ def handle_completed_board_move() -> None:
     if not current:
         return
 
-    board = chess.Board(current["fen"])
-    turn_role = "white" if board.turn == chess.WHITE else "black"
+    board = db.board_from_game(current)
+    turn_role = "white" if board.turn else "black"
 
     if (
         current["status"] != "active"
@@ -1878,8 +1911,8 @@ def live_board_fragment() -> None:
         st.error(tr(lang, "game_missing"))
         return
 
-    board = chess.Board(current["fen"])
-    turn_role = "white" if board.turn == chess.WHITE else "black"
+    board = db.board_from_game(current)
+    turn_role = "white" if board.turn else "black"
 
     can_move = (
         current["status"] == "active"
@@ -1927,6 +1960,11 @@ def live_board_fragment() -> None:
     </div>
     """)
 
+    if current.get("variant") == db.VARIANT_COUNTER:
+        render_html(
+            f'<div class="sv-access-card"><div class="sv-access-label">{escape(variant_label(lang, db.VARIANT_COUNTER))}</div><div class="sv-access-text">{escape(COUNTER_RULES.get(lang, COUNTER_RULES["EN"]))}</div></div>'
+        )
+
     left, right = st.columns(
         [3, 1.15],
         gap="large",
@@ -1939,7 +1977,12 @@ def live_board_fragment() -> None:
             else []
         )
 
-        stadia_chess_board(
+        board_widget = (
+            stadia_counter_board
+            if current.get("variant") == db.VARIANT_COUNTER
+            else stadia_chess_board
+        )
+        board_widget(
             fen=current["fen"],
             orientation=seat.role,
             interactive=can_move,
