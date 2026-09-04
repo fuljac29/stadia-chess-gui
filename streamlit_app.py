@@ -693,6 +693,27 @@ render_html("""
     padding-bottom:3.5rem;
 }
 
+/* Mobile browsers can keep Streamlit's main container at the initial
+   viewport height.  Let the document grow with the invitation form so the
+   page can continue below "Invite a friend". */
+html,
+body,
+.stApp,
+[data-testid="stAppViewContainer"]{
+    height:auto!important;
+    min-height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:visible!important;
+    touch-action:pan-y!important;
+}
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"]{
+    height:auto!important;
+    min-height:100vh!important;
+    overflow:visible!important;
+    touch-action:pan-y!important;
+}
+
 /* Streamlit marks fragment contents as stale while their periodic database
    check is running.  Keep the current board fully visible instead of fading
    the whole game every second. */
