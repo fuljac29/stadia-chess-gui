@@ -692,6 +692,13 @@ render_html("""
     padding-top:1.35rem;
     padding-bottom:3.5rem;
 }
+
+/* Streamlit marks fragment contents as stale while their periodic database
+   check is running.  Keep the current board fully visible instead of fading
+   the whole game every second. */
+[data-stale="true"]{
+    opacity:1!important;
+}
 h1,h2,h3{letter-spacing:-.025em}
 
 .sv-hero{
@@ -1856,7 +1863,7 @@ def polished_result_text(current: dict) -> str:
     return f"{tr(lang, 'result')}: {result or '—'}"
 
 
-@st.fragment(run_every="1s")
+@st.fragment(run_every="2s")
 def chess_clock_fragment() -> None:
     state = db.get_clock_state(
         seat.game_id
