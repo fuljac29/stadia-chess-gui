@@ -699,6 +699,13 @@ render_html("""
 [data-stale="true"]{
     opacity:1!important;
 }
+
+/* Hide Streamlit branding in the embedded/private playing surface. */
+footer,
+[data-testid="stFooter"]{
+    display:none!important;
+    visibility:hidden!important;
+}
 h1,h2,h3{letter-spacing:-.025em}
 
 .sv-hero{
