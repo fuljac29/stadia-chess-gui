@@ -54,7 +54,11 @@ SV_FINISH_URL = "https://stadiaorg.com/wp-json/stadia-chess/v1/finish"
 # It uses its own fixed-size iframe and handles piece selection locally,
 # so clicking a piece does NOT rerun or move the Streamlit page.
 BOARD_DISPLAY_PX = 460
-CHESS_BOARD_FRONTEND = Path(__file__).parent / "chess_board_frontend"
+CHESS_BOARD_FRONTEND = (
+    Path(__file__).parent
+    / "chess_board_frontend"
+    / "chess_board_frontend"
+)
 stadia_chess_board = components.declare_component(
     "stadia_chess_board_v087",
     path=str(CHESS_BOARD_FRONTEND),
