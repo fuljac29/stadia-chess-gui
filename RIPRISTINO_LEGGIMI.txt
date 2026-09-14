@@ -1,0 +1,81 @@
+RIPRISTINO STADIA CHESS — 14 settembre 2026
+
+COSA FARE
+1. Estrai questo ZIP sul computer.
+2. Apri la cartella stadia-chess-gui-main contenuta nello ZIP.
+3. Apri su GitHub il repository già collegato alla tua app Streamlit.
+4. Usa Add file > Upload files e trascina il CONTENUTO della cartella
+   estratta (file e cartelle), non lo ZIP e non la cartella esterna.
+   streamlit_app.py deve restare nella radice del repository.
+5. Conferma con Commit changes sul ramo già usato dall'app.
+6. Apri la tua app in Streamlit Community Cloud e riavviala con Reboot app.
+   Il file di avvio deve essere streamlit_app.py.
+7. Rientra dall'Arena Premium di Stadia e scegli il gioco:
+   - Scacchi tradizionali: 8 x 8.
+   - Nuovi Scacchi Controspionaggio: 10 x 8, con T e I.
+8. Crea un invito e aprilo da un secondo browser per provare i due colori.
+   Se il componente grafico non appare, attiva la casella
+   "Scacchiera semplificata (se quella grafica non si carica)".
+
+FILE CHE DEVONO ESSERE SOSTITUITI
+- streamlit_app.py
+- chess_board_frontend/index.html
+- counter_board_frontend/index.html
+Tutti gli altri file necessari sono inclusi, comprese le immagini in
+counter_board_frontend/pieces/. Puoi caricare l'intero contenuto estratto.
+
+PULIZIA FACOLTATIVA DEL VECCHIO REPOSITORY
+Il caricamento GitHub non elimina file preesistenti. Se rimangono, puoi
+rimuovere index.html dalla radice e la sottocartella duplicata
+chess_board_frontend/chess_board_frontend/. Questa versione non le usa.
+NON eliminare chess_board_frontend/index.html o counter_board_frontend/index.html.
+
+CONFIGURAZIONE ESISTENTE
+Conserva i valori Secrets già configurati, soprattutto APP_SECRET e
+DATABASE_URL. Non sostituirli con i valori d'esempio e non eliminare il
+ database esistente. L'aggiornamento non richiede un nuovo repository,
+una nuova app o nuove credenziali.
+L'accesso per creare partite rimane quello dell'Arena Premium esistente.
+Aprire semplicemente un file index.html o caricare lo ZIP su GitHub
+senza estrarlo non avvia questa applicazione Python.
+
+CORREZIONI ESEGUITE
+- Sostituita la pagina ChatGPT salvata per errore come componente degli
+  scacchi tradizionali con il componente reale recuperato dallo ZIP.
+- Ricollegate entrambe le scacchiere grafiche all'applicazione.
+- Corretto il messaggio JSON che trasmette le mosse a Streamlit.
+- Ripristinata la gestione server delle mosse grafiche, con controllo
+  del turno e protezione dall'elaborazione ripetuta dello stesso evento.
+- La scacchiera 10 x 8 conserva la selezione del pezzo durante il polling.
+- Mantenuta la scacchiera semplificata come alternativa e aggiornato il
+  controllo del turno prima di elaborarne un clic.
+- Motore delle regole, disposizione iniziale, inviti e accesso Premium
+  conservati dal progetto allegato.
+
+REGOLAMENTO RECUPERATO DAL PROGETTO
+T: Alfiere Trasparente. Diagonale fino a 3 caselle; può oltrepassare
+un pezzo, che rimane sulla scacchiera.
+I: Intercettore. Una casella in ogni direzione; adiacente a un T nemico,
+ne neutralizza la capacità di oltrepassare pezzi.
+Le regole estese del motore sono in counter_chess.py. Nessuna modifica
+alle regole del motore è stata apportata in questo ripristino.
+
+VERIFICHE
+Superati i test automatici Streamlit per apertura, entrambe le varianti,
+mosse grafiche, deduplicazione, mosse sulla scacchiera semplificata e
+persistenza della variante. Verificati T e I su posizioni dedicate.
+Superati i test JavaScript del protocollo dei componenti, del numero
+di caselle, delle immagini 10 x 8, della selezione durante il polling,
+dell'invio di una mossa e dell'orientamento.
+Verificata la compilazione di tutti i file Python.
+Non verificati: rendering in un browser reale (download del browser
+bloccato nell'ambiente di prova), sito pubblicato, WordPress/Premium,
+PostgreSQL remoto. Lo ZIP corretto non aggiorna da solo il sito online.
+
+COMANDI DI TEST LOCALI (per assistenza tecnica)
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+node tests/test_frontends.js
+
+AVVIO LOCALE
+python -m streamlit run streamlit_app.py

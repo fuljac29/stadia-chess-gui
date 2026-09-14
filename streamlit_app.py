@@ -2136,6 +2136,15 @@ native_selection_key = f"stadia_native_from_{seat.game_id}_{seat.role}"
 
 def handle_native_square_click(square: str, legal_moves: list[str]) -> None:
     """Handle both board clicks without navigating or reloading the browser."""
+    current = db.get_game(seat.game_id)
+    if not current or current["status"] != "active":
+        st.session_state.pop(native_selection_key, None)
+        return
+    board = db.board_from_game(current)
+    if seat.role != ("white" if board.turn else "black"):
+        st.session_state.pop(native_selection_key, None)
+        return
+    legal_moves = [move.uci() for move in board.legal_moves]
     selected = str(st.session_state.get(native_selection_key, "")).lower()
     origins = {move[:2] for move in legal_moves if len(move) >= 4}
 
@@ -2278,12 +2287,9 @@ def render_native_chess_board(
 @st.fragment(run_every="2s")
 def live_board_fragment() -> None:
     """
-    One stable fragment owns status, native board and move list.
-
-    The board is rendered directly by Streamlit, with no separately served
-    frontend component. This keeps play available even when Community Cloud's
-    component asset route is unavailable.
+    One stable fragment owns board events, status, board and move list.
     """
+    handle_completed_board_move()
     try:
         current = db.get_game(seat.game_id)
     except Exception:
@@ -2362,12 +2368,25 @@ def live_board_fragment() -> None:
             else []
         )
 
-        render_native_chess_board(
-            fen=current["fen"],
-            orientation=seat.role,
-            interactive=can_move,
-            legal_moves=legal_moves,
+        simple_board = st.checkbox(
+            "Scacchiera semplificata (se quella grafica non si carica)"
+            if lang == "IT" else "Simple board (if the graphical board does not load)",
+            key=f"simple_board_{seat.game_id}_{seat.role}",
         )
+        board_args = dict(
+            fen=current["fen"], orientation=seat.role,
+            interactive=can_move, legal_moves=legal_moves,
+        )
+        if simple_board:
+            render_native_chess_board(**board_args)
+        else:
+            component = (
+                stadia_counter_board
+                if current.get("variant") == db.VARIANT_COUNTER
+                else stadia_chess_board
+            )
+            component(**board_args, key=board_component_key, default=None)
+
 
     with right:
         try:
