@@ -54,11 +54,7 @@ SV_FINISH_URL = "https://stadiaorg.com/wp-json/stadia-chess/v1/finish"
 # It uses its own fixed-size iframe and handles piece selection locally,
 # so clicking a piece does NOT rerun or move the Streamlit page.
 BOARD_DISPLAY_PX = 460
-CHESS_BOARD_FRONTEND = (
-    Path(__file__).parent
-    / "chess_board_frontend"
-    / "chess_board_frontend"
-)
+CHESS_BOARD_FRONTEND = Path(__file__).parent / "chess_board_frontend"
 stadia_chess_board = components.declare_component(
     "stadia_chess_board_v087",
     path=str(CHESS_BOARD_FRONTEND),
@@ -79,6 +75,10 @@ def secret(name: str, default: str) -> str:
 
 APP_SECRET = secret("APP_SECRET", "DEV-ONLY-CHANGE-ME")
 SV_CHESS_CHECKOUT_SECRET = secret("SV_CHESS_CHECKOUT_SECRET", "")
+STREAMLIT_PUBLIC_URL = secret(
+    "STREAMLIT_PUBLIC_URL",
+    "https://stadia-chess-gui-3uaqqyaagnedaexn3vipja.streamlit.app",
+).rstrip("/")
 
 TIME_LABELS = {
     "rapid_15_10": "Rapid — 15 + 10",
@@ -314,7 +314,7 @@ POLISH = {
         "existing_free_game": 'You already have a free game in progress.',
         "open_existing": 'OPEN MY CURRENT GAME',
         "premium_play_again": 'PLAY ANOTHER GAME',
-        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
+        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -376,7 +376,7 @@ POLISH = {
         "existing_free_game": 'Hai già una partita gratuita in corso.',
         "open_existing": 'APRI LA PARTITA IN CORSO',
         "premium_play_again": "GIOCA UN'ALTRA PARTITA",
-        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
+        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -438,7 +438,7 @@ POLISH = {
         "existing_free_game": 'Du hast bereits eine kostenlose Partie laufen.',
         "open_existing": 'MEINE AKTUELLE PARTIE ÖFFNEN',
         "premium_play_again": 'NOCH EINE PARTIE',
-        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
+        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -500,7 +500,7 @@ POLISH = {
         "existing_free_game": 'Vous avez déjà une partie gratuite en cours.',
         "open_existing": 'OUVRIR MA PARTIE EN COURS',
         "premium_play_again": 'JOUER UNE AUTRE PARTIE',
-        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
+        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -562,7 +562,7 @@ POLISH = {
         "existing_free_game": 'Ya tienes una partida gratuita en curso.',
         "open_existing": 'ABRIR MI PARTIDA ACTUAL',
         "premium_play_again": 'JUGAR OTRA PARTIDA',
-        "footer": 'Stadia Private Chess · v0.9.2.1 Pre-game Typography Only',
+        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
     },
 }
 
@@ -672,10 +672,21 @@ def copy_button(
     )
 
 
-def seat_link(game_id: str, role: str, lang: str) -> str:
+def seat_link(
+    game_id: str,
+    role: str,
+    lang: str,
+    player_id_value: str = "",
+) -> str:
     token = make_seat_token(game_id, role, APP_SECRET)
-    params = urlencode({"seat": token, "lang": lang})
-    return f"{STADIA_PUBLIC_URL}/#{params}"
+    params = {"seat": token, "lang": lang}
+    if valid_player_id(player_id_value):
+        params["player"] = player_id_value
+
+    # URL fragments (everything after '#') never reach Streamlit and cannot
+    # restore a seat after a reload. Use a real query string on the Streamlit
+    # app so the signed seat token is available to st.query_params.
+    return f"{STREAMLIT_PUBLIC_URL}/?{urlencode(params)}"
 
 
 render_html("""
@@ -697,39 +708,11 @@ render_html("""
     padding-bottom:3.5rem;
 }
 
-/* Mobile browsers can keep Streamlit's main container at the initial
-   viewport height.  Let the document grow with the invitation form so the
-   page can continue below "Invite a friend". */
-html,
-body,
-.stApp,
-[data-testid="stAppViewContainer"]{
-    height:auto!important;
-    min-height:100%!important;
-    overflow-x:hidden!important;
-    overflow-y:visible!important;
-    touch-action:pan-y!important;
-}
-[data-testid="stMain"],
-[data-testid="stMainBlockContainer"]{
-    height:auto!important;
-    min-height:100vh!important;
-    overflow:visible!important;
-    touch-action:pan-y!important;
-}
-
 /* Streamlit marks fragment contents as stale while their periodic database
    check is running.  Keep the current board fully visible instead of fading
    the whole game every second. */
 [data-stale="true"]{
     opacity:1!important;
-}
-
-/* Hide Streamlit branding in the embedded/private playing surface. */
-footer,
-[data-testid="stFooter"]{
-    display:none!important;
-    visibility:hidden!important;
 }
 h1,h2,h3{letter-spacing:-.025em}
 
@@ -1446,12 +1429,20 @@ if not seat:
                 elif (found_game["status"] in {"waiting", "ready"} and str(found_game.get("white_player_id") or "").strip() == player_id):
                     st.error(polish(lang, "same_player"))
                 else:
-                    if found_game["status"] in {"waiting", "ready"}:
-                        found_game = db.accept_invite(pending_code, black_player_id=player_id)
+                    # Put the signed black-seat token in the browser URL before
+                    # consuming the one-time invitation. If the database is
+                    # slow or the Streamlit session reconnects, the guest can
+                    # still resume the claim instead of losing access.
+                    game_id_to_claim = str(found_game["id"])
                     st.session_state.pop("pending_invite_code", None)
-                    st.query_params["seat"] = make_seat_token(found_game["id"], "black", APP_SECRET)
+                    st.query_params["seat"] = make_seat_token(
+                        game_id_to_claim,
+                        "black",
+                        APP_SECRET,
+                    )
                     st.query_params["lang"] = lang
                     st.query_params["player"] = player_id
+                    st.query_params["claim"] = pending_code
                     st.rerun()
 
         with c2:
@@ -1573,6 +1564,31 @@ if not game:
     st.error(tr(lang, "game_missing"))
     st.stop()
 
+# Complete a guest claim only after its signed seat token is present in the
+# browser URL. The operation is recoverable across a slow response or reload.
+claim_code = db.normalize_invite_code(
+    str(st.query_params.get("claim", ""))
+)
+if seat.role == "black" and claim_code:
+    if game["status"] in {"waiting", "ready"}:
+        try:
+            claimed_game = db.accept_invite(
+                claim_code,
+                black_player_id=player_id,
+            )
+            if claimed_game:
+                game = claimed_game
+        except Exception:
+            st.warning(
+                "Connection temporarily unavailable. "
+                "Your invitation is safe; retrying automatically…"
+            )
+            st.stop()
+
+    if "claim" in st.query_params:
+        del st.query_params["claim"]
+    st.rerun()
+
 if game["status"] == "ready":
     try:
         db.start_game(seat.game_id)
@@ -1689,6 +1705,7 @@ if game["status"] == "waiting" and seat.role == "white":
                 seat.game_id,
                 "white",
                 lang,
+                player_id,
             ),
             language=None,
         )
@@ -1753,7 +1770,15 @@ render_html(f"""
 
 with st.expander(polish(lang, "save_game_link")):
     st.caption(polish(lang, "save_game_help"))
-    st.code(seat_link(seat.game_id, seat.role, lang), language=None)
+    st.code(
+        seat_link(
+            seat.game_id,
+            seat.role,
+            lang,
+            player_id,
+        ),
+        language=None,
+    )
 
 
 def player_offer(
@@ -1895,11 +1920,15 @@ def polished_result_text(current: dict) -> str:
     return f"{tr(lang, 'result')}: {result or '—'}"
 
 
-@st.fragment(run_every="2s")
-def chess_clock_fragment() -> None:
-    state = db.get_clock_state(
-        seat.game_id
-    )
+def render_chess_clock(current_game: dict) -> None:
+    """Render the clock inside the single live-game polling fragment."""
+    try:
+        state = db.get_clock_state(
+            seat.game_id
+        )
+    except Exception:
+        st.warning("Connection temporarily unavailable. Retrying automatically…")
+        return
 
     if not state:
         return
@@ -1913,13 +1942,6 @@ def chess_clock_fragment() -> None:
             </div>
             """
         )
-        return
-
-    current_game = db.get_game(
-        seat.game_id
-    )
-
-    if not current_game:
         return
 
     white_name = str(
@@ -1984,9 +2006,6 @@ def chess_clock_fragment() -> None:
     )
 
 
-chess_clock_fragment()
-
-
 # STADIA CHESS BOARD v0.8.7 — BROWSER-NATIVE, FIXED, NO FONT DEPENDENCY
 board_component_key = f"stadia_board_v087_{seat.game_id}_{seat.role}"
 last_move_nonce_key = f"stadia_board_nonce_{seat.game_id}_{seat.role}"
@@ -2015,29 +2034,38 @@ def handle_completed_board_move() -> None:
     ):
         return
 
-    st.session_state[last_move_nonce_key] = nonce
-
-    current = db.get_game(seat.game_id)
-    if not current:
-        return
-
-    board = db.board_from_game(current)
-    turn_role = "white" if board.turn else "black"
-
-    if (
-        current["status"] != "active"
-        or seat.role != turn_role
-    ):
-        return
-
     try:
+        current = db.get_game(seat.game_id)
+        if not current:
+            st.session_state[last_move_nonce_key] = nonce
+            return
+
+        board = db.board_from_game(current)
+        turn_role = "white" if board.turn else "black"
+
+        if (
+            current["status"] != "active"
+            or seat.role != turn_role
+        ):
+            st.session_state[last_move_nonce_key] = nonce
+            return
+
         # db.make_move remains the authoritative server-side validator.
         db.make_move(
             seat.game_id,
             uci,
         )
+        # Mark the browser event as complete only after the database confirms
+        # the move. A transient connection failure can then be retried.
+        st.session_state[last_move_nonce_key] = nonce
+        st.session_state.pop("chess_move_error", None)
     except ValueError as exc:
+        st.session_state[last_move_nonce_key] = nonce
         st.session_state["chess_move_error"] = str(exc)
+    except Exception:
+        st.session_state["chess_move_error"] = (
+            "Connection temporarily unavailable. Retrying the move automatically…"
+        )
 
 
 @st.fragment(run_every="2s")
@@ -2049,11 +2077,20 @@ def live_board_fragment() -> None:
     the same iframe/key and updates its DOM in place, so the outer page remains
     anchored while waiting for the other player.
     """
-    current = db.get_game(seat.game_id)
+    # Re-process an unconfirmed browser move after a temporary database error.
+    handle_completed_board_move()
+
+    try:
+        current = db.get_game(seat.game_id)
+    except Exception:
+        st.warning("Connection temporarily unavailable. Retrying automatically…")
+        return
 
     if not current:
         st.error(tr(lang, "game_missing"))
         return
+
+    render_chess_clock(current)
 
     board = db.board_from_game(current)
     turn_role = "white" if board.turn else "black"
@@ -2137,7 +2174,11 @@ def live_board_fragment() -> None:
         )
 
     with right:
-        moves = db.get_moves(seat.game_id)
+        try:
+            moves = db.get_moves(seat.game_id)
+        except Exception:
+            st.warning("Connection temporarily unavailable. Retrying automatically…")
+            moves = []
 
         render_html(
             f'<div class="sv-panel-title">{escape(polish(lang, "moves_played"))} ({len(moves)})</div>'
