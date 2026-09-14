@@ -314,7 +314,7 @@ POLISH = {
         "existing_free_game": 'You already have a free game in progress.',
         "open_existing": 'OPEN MY CURRENT GAME',
         "premium_play_again": 'PLAY ANOTHER GAME',
-        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
+        "footer": 'Stadia Private Chess · v0.9.2.3 Native Board Recovery',
     },
     "IT": {
         "arena_badge": "ARENA SCACCHI PRIVATA",
@@ -376,7 +376,7 @@ POLISH = {
         "existing_free_game": 'Hai già una partita gratuita in corso.',
         "open_existing": 'APRI LA PARTITA IN CORSO',
         "premium_play_again": "GIOCA UN'ALTRA PARTITA",
-        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
+        "footer": 'Stadia Private Chess · v0.9.2.3 Native Board Recovery',
     },
     "DE": {
         "arena_badge": "PRIVATE SCHACH-ARENA",
@@ -438,7 +438,7 @@ POLISH = {
         "existing_free_game": 'Du hast bereits eine kostenlose Partie laufen.',
         "open_existing": 'MEINE AKTUELLE PARTIE ÖFFNEN',
         "premium_play_again": 'NOCH EINE PARTIE',
-        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
+        "footer": 'Stadia Private Chess · v0.9.2.3 Native Board Recovery',
     },
     "FR": {
         "arena_badge": "ARÈNE D'ÉCHECS PRIVÉE",
@@ -500,7 +500,7 @@ POLISH = {
         "existing_free_game": 'Vous avez déjà une partie gratuite en cours.',
         "open_existing": 'OUVRIR MA PARTIE EN COURS',
         "premium_play_again": 'JOUER UNE AUTRE PARTIE',
-        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
+        "footer": 'Stadia Private Chess · v0.9.2.3 Native Board Recovery',
     },
     "ES": {
         "arena_badge": "ARENA DE AJEDREZ PRIVADA",
@@ -562,7 +562,7 @@ POLISH = {
         "existing_free_game": 'Ya tienes una partida gratuita en curso.',
         "open_existing": 'ABRIR MI PARTIDA ACTUAL',
         "premium_play_again": 'JUGAR OTRA PARTIDA',
-        "footer": 'Stadia Private Chess · v0.9.2.2 Resilient Return & Sync',
+        "footer": 'Stadia Private Chess · v0.9.2.3 Native Board Recovery',
     },
 }
 
@@ -2068,18 +2068,186 @@ def handle_completed_board_move() -> None:
         )
 
 
+NATIVE_PIECE_SYMBOLS = {
+    "K": "♔",
+    "Q": "♕",
+    "R": "♖",
+    "B": "♗",
+    "N": "♘",
+    "P": "♙",
+    "k": "♚",
+    "q": "♛",
+    "r": "♜",
+    "b": "♝",
+    "n": "♞",
+    "p": "♟",
+    # The two patented 10×8 pieces deliberately retain their identifying
+    # letters so they remain distinguishable without an icon font.
+    "T": "T",
+    "I": "I",
+    "t": "t",
+    "i": "i",
+}
+
+
+def native_fen_squares(fen: str) -> tuple[list[list[tuple[str, str]]], int]:
+    """Return display-independent (square, piece) rows from 8×8 or 10×8 FEN."""
+    placement = str(fen or "").split(" ", 1)[0]
+    encoded_rows = placement.split("/")
+    height = len(encoded_rows)
+    rows: list[list[tuple[str, str]]] = []
+    width = 0
+
+    for row_index, encoded in enumerate(encoded_rows):
+        pieces: list[str] = []
+        position = 0
+        while position < len(encoded):
+            char = encoded[position]
+            if char.isdigit():
+                end = position + 1
+                while end < len(encoded) and encoded[end].isdigit():
+                    end += 1
+                pieces.extend([""] * int(encoded[position:end]))
+                position = end
+                continue
+            pieces.append(char)
+            position += 1
+
+        width = max(width, len(pieces))
+        rank = height - row_index
+        rows.append(
+            [
+                (f"{chr(ord('a') + file_index)}{rank}", piece)
+                for file_index, piece in enumerate(pieces)
+            ]
+        )
+
+    for row_index, row in enumerate(rows):
+        rank = height - row_index
+        while len(row) < width:
+            file_index = len(row)
+            row.append((f"{chr(ord('a') + file_index)}{rank}", ""))
+
+    return rows, width
+
+
+def native_board_href(from_square: str | None, to_square: str | None) -> str:
+    params = {
+        str(key): str(value)
+        for key, value in dict(st.query_params).items()
+        if key not in {"from", "to"}
+    }
+    if from_square:
+        params["from"] = from_square
+    if to_square:
+        params["to"] = to_square
+    return f"?{urlencode(params)}#stadia-native-board"
+
+
+def clear_native_move_query() -> None:
+    for key in ("from", "to"):
+        if key in st.query_params:
+            del st.query_params[key]
+
+
+def render_native_chess_board(
+    *,
+    fen: str,
+    orientation: str,
+    legal_moves: list[str],
+    interactive: bool,
+) -> None:
+    """Render a zero-dependency board that cannot fail through component assets."""
+    rows, width = native_fen_squares(fen)
+    if orientation == "black":
+        rows = [list(reversed(row)) for row in reversed(rows)]
+
+    selected = str(st.query_params.get("from", "")).lower().strip()
+    destinations = {
+        move[2:4]
+        for move in legal_moves
+        if len(move) >= 4 and move[:2] == selected
+    }
+    origins = {
+        move[:2]
+        for move in legal_moves
+        if len(move) >= 4
+    }
+
+    cells: list[str] = []
+    for visual_row, row in enumerate(rows):
+        for visual_col, (square, piece) in enumerate(row):
+            dark = (visual_row + visual_col) % 2 == 1
+            classes = ["sv-native-square", "dark" if dark else "light"]
+            if square == selected:
+                classes.append("selected")
+            if square in destinations:
+                classes.append("destination")
+            if square in origins and interactive and not selected:
+                classes.append("origin")
+
+            href = ""
+            if interactive:
+                if selected and square in destinations:
+                    href = native_board_href(selected, square)
+                elif square in origins:
+                    href = native_board_href(square, None)
+                elif square == selected:
+                    href = native_board_href(None, None)
+
+            symbol = NATIVE_PIECE_SYMBOLS.get(piece, piece)
+            label = escape(symbol) if symbol else "&nbsp;"
+            title = escape(square)
+            body = f'<span class="sv-native-piece">{label}</span><small>{title}</small>'
+            if href:
+                body = f'<a href="{escape(href)}" target="_self" aria-label="{title}">{body}</a>'
+
+            cells.append(f'<div class="{" ".join(classes)}">{body}</div>')
+
+    instruction = (
+        ui(lang, "click_destination")
+        if interactive and selected
+        else ui(lang, "click_piece")
+        if interactive
+        else ui(lang, "waiting_other")
+    )
+    render_html(
+        f"""
+        <div id="stadia-native-board" class="sv-native-board-wrap">
+          <div class="sv-native-instruction">{escape(instruction)}</div>
+          <div class="sv-native-board" style="grid-template-columns:repeat({max(width, 1)},minmax(0,1fr))">
+            {''.join(cells)}
+          </div>
+        </div>
+        <style>
+        .sv-native-board-wrap{{width:100%;max-width:620px;margin:0 auto}}
+        .sv-native-instruction{{margin:0 0 10px;color:#475569;font-weight:700}}
+        .sv-native-board{{display:grid;border:2px solid #111827;box-shadow:0 10px 28px rgba(15,23,42,.12)}}
+        .sv-native-square{{position:relative;aspect-ratio:1/1;min-width:0}}
+        .sv-native-square.light{{background:#efd9b4}}
+        .sv-native-square.dark{{background:#b98c67}}
+        .sv-native-square a{{display:flex;width:100%;height:100%;align-items:center;justify-content:center;color:#111827;text-decoration:none}}
+        .sv-native-square:not(:has(a)){{display:flex;align-items:center;justify-content:center}}
+        .sv-native-piece{{font-size:clamp(22px,5.2vw,48px);font-weight:900;line-height:1;text-shadow:0 1px 0 rgba(255,255,255,.55)}}
+        .sv-native-square small{{position:absolute;right:3px;bottom:1px;font-size:9px;font-weight:800;opacity:.62}}
+        .sv-native-square.origin{{box-shadow:inset 0 0 0 3px rgba(109,76,255,.5)}}
+        .sv-native-square.selected{{box-shadow:inset 0 0 0 5px #714cff}}
+        .sv-native-square.destination::after{{content:"";position:absolute;width:22%;height:22%;border-radius:50%;background:#714cff;opacity:.72;pointer-events:none}}
+        .sv-native-square.destination:has(.sv-native-piece:not(:empty))::after{{width:72%;height:72%;background:transparent;border:4px solid #714cff}}
+        </style>
+        """
+    )
+
+
 @st.fragment(run_every="2s")
 def live_board_fragment() -> None:
     """
-    One stable fragment owns status, board and move list.
+    One stable fragment owns status, native board and move list.
 
-    Polling happens by rerunning this fragment only. The custom component keeps
-    the same iframe/key and updates its DOM in place, so the outer page remains
-    anchored while waiting for the other player.
+    The board is rendered directly by Streamlit, with no separately served
+    frontend component. This keeps play available even when Community Cloud's
+    component asset route is unavailable.
     """
-    # Re-process an unconfirmed browser move after a temporary database error.
-    handle_completed_board_move()
-
     try:
         current = db.get_game(seat.game_id)
     except Exception:
@@ -2158,19 +2326,40 @@ def live_board_fragment() -> None:
             else []
         )
 
-        board_widget = (
-            stadia_counter_board
-            if current.get("variant") == db.VARIANT_COUNTER
-            else stadia_chess_board
-        )
-        board_widget(
+        requested_from = str(st.query_params.get("from", "")).lower().strip()
+        requested_to = str(st.query_params.get("to", "")).lower().strip()
+        if requested_from and requested_to:
+            candidates = [
+                move
+                for move in legal_moves
+                if len(move) >= 4
+                and move[:2] == requested_from
+                and move[2:4] == requested_to
+            ]
+            if can_move and candidates:
+                # Promote to a queen by default when several promotion moves
+                # share the same source and destination.
+                chosen_move = next(
+                    (move for move in candidates if move.endswith("q")),
+                    candidates[0],
+                )
+                try:
+                    db.make_move(seat.game_id, chosen_move)
+                    st.session_state.pop("chess_move_error", None)
+                except ValueError as exc:
+                    st.session_state["chess_move_error"] = str(exc)
+                except Exception:
+                    st.session_state["chess_move_error"] = (
+                        "Connection temporarily unavailable. Please select the move again."
+                    )
+            clear_native_move_query()
+            st.rerun()
+
+        render_native_chess_board(
             fen=current["fen"],
             orientation=seat.role,
             interactive=can_move,
             legal_moves=legal_moves,
-            size=BOARD_DISPLAY_PX,
-            key=board_component_key,
-            on_change=handle_completed_board_move,
         )
 
     with right:
